@@ -82,7 +82,8 @@ html.big .sw{background:var(--g500)}html.big .sw::after{transform:translateX(20p
   .nav{left:50%;right:auto;transform:translateX(-50%);top:auto;bottom:10px;width:min(560px,calc(100% - 20px));height:72px;flex-direction:row;padding:8px;border-radius:24px;justify-content:space-around;align-items:center}
   .nav:hover,.nav:focus-within{width:min(560px,calc(100% - 20px))}
   .nav .search,.nav .ngroup,.nav .ntree,.nav .nsp,.nav .me,.nav .lbl,.nav .badge,.nav .dotb{display:none}
-  .nav .brand{display:flex;flex:0 0 auto;padding:0 2px 0 0;cursor:pointer}
+  .nav .brand{display:flex;flex:0 0 auto;padding:0 14px 0 2px;margin-right:6px;cursor:pointer;position:relative}
+  .nav .brand::after{content:'';position:absolute;right:0;top:8px;bottom:8px;width:1px;background:rgba(255,255,255,.25)}
   .nav .brand .logo{flex:0 0 46px;width:46px;height:46px}
   .nitem,.ntoggle{flex:1 1 0;max-width:96px;height:56px;padding:0;flex-direction:column;justify-content:center;align-items:center;gap:3px;border-radius:16px}
   .nitem::after,.ntoggle::after{content:attr(data-short);font-size:.7rem;font-weight:700;line-height:1;color:rgba(242,247,244,.9);white-space:nowrap}
@@ -791,7 +792,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
       • 공무원연금 개시 나이(1996년 이후 임용): 퇴직연도 2022~23년 61세, 2024~26년 62세, 2027~29년 63세, 2030~32년 64세, 2033년 이후 65세.<br>
       • 실제 지급액과 세금은 공무원연금공단(1588-4321)·시도교육청 공고·원천징수영수증으로 확인하세요.<br>
       • 입력값은 이 브라우저에만 저장됩니다.<br>
-      • 화면 버전: 2026-11-08 11:00 (예전 화면이 보이면 새로고침하세요)</p>
+      • 화면 버전: 2026-11-08 11:05 (예전 화면이 보이면 새로고침하세요)</p>
     </div>
   </section>
 </main>
