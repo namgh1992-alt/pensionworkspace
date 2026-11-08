@@ -336,9 +336,9 @@ details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
   .methods{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
   .chartbox{height:300px}.chartbox.tall{height:380px}
   .toast{bottom:96px}
-  .stats[style*="--n:4"]{grid-template-columns:repeat(4,1fr)}
   .adv-h{flex-wrap:wrap}.adv-h small{flex-basis:100%}
 }
+@media (min-width:601px) and (max-width:1024px){.stats[style*="--n:4"]{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* 휴대폰 (≤600px) */
 @media (max-width:600px){
   html{font-size:16px}html.big{font-size:18px}
