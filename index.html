@@ -18,7 +18,7 @@
 *{box-sizing:border-box}
 html{font-size:17px}
 html.big{font-size:19.5px}
-body{margin:0;color:var(--ink);font-family:'Noto Sans KR',system-ui,-apple-system,'Malgun Gothic',sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;
+body{margin:0;overflow-x:hidden;color:var(--ink);font-family:'Noto Sans KR',system-ui,-apple-system,'Malgun Gothic',sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;
   background:#e9efe9;}
 .bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(135deg,#eef4ee 0%,#e4eee6 45%,#efe9dc 100%)}
 .bg i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.75}
@@ -113,11 +113,13 @@ html.big .sw{background:var(--g500)}html.big .sw::after{transform:translateX(20p
 .next{display:flex;justify-content:flex-end;margin-top:6px}
 
 /* fields */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:16px 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(215px,100%),1fr));gap:16px 18px}
+.field{min-width:0}
+.field label{overflow-wrap:anywhere}
 .field label{display:block;font-weight:700;font-size:.98rem;margin-bottom:6px;color:var(--ink)}
 .inp{display:flex;align-items:center;min-width:0;border:1.5px solid rgba(15,77,58,.22);border-radius:14px;background:rgba(255,255,255,.9);height:54px;padding:0 15px;transition:border-color .15s, box-shadow .15s}
 .inp:focus-within{border-color:var(--g600);box-shadow:0 0 0 4px rgba(19,138,99,.15)}
-.inp input,.inp select{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:1.15rem;font-weight:700;color:var(--ink);background:transparent;text-align:right;padding:0}
+.inp input,.inp select{flex:1 1 0;width:100%;min-width:0;text-overflow:ellipsis;border:0;outline:0;font:inherit;font-size:1.15rem;font-weight:700;color:var(--ink);background:transparent;text-align:right;padding:0}
 .inp select{text-align:left;font-size:1rem;cursor:pointer}
 .inp span{margin-left:8px;color:var(--muted);font-weight:500;white-space:nowrap}
 .help{margin:5px 2px 0;font-size:.84rem;color:var(--muted);line-height:1.45}
@@ -184,9 +186,9 @@ html.big .sw{background:var(--g500)}html.big .sw::after{transform:translateX(20p
 @keyframes bob{50%{transform:translateY(-4px)}}
 
 /* panel (no wave line) */
-.panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(.3,.7,.3,1)}
+.panel{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(.3,.7,.3,1)}
 .panel.open{grid-template-rows:1fr;margin-top:20px}
-.panel>.pin{overflow:hidden;min-height:0}
+.panel>.pin{overflow:hidden;min-height:0;min-width:0}
 .pbody{border-radius:26px;padding:24px 24px 8px;background:rgba(255,255,255,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.8);box-shadow:0 14px 40px rgba(15,77,58,.1)}
 @media (max-width:760px){.pbody{padding:16px 10px 4px}}
 .panel[data-t="1"] .pbody{background:linear-gradient(180deg,rgba(227,238,247,.85),rgba(255,255,255,.45) 220px)}
@@ -201,7 +203,7 @@ html.big .sw{background:var(--g500)}html.big .sw::after{transform:translateX(20p
 .pbody .card{background:rgba(255,255,255,.78)}
 
 /* stats (redesigned KPI) */
-.stats{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:12px;margin:0 0 18px}
+.stats{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:12px;margin:0 0 18px}
 @media (max-width:1080px){.stats{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
 .stat{background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:20px;padding:16px 18px 15px;box-shadow:0 6px 18px rgba(15,77,58,.07);display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -350,7 +352,9 @@ details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
   .vhead{margin:4px 0 14px}.vhead h2{font-size:1.35rem}.vhead p{font-size:.92rem}
   .card{padding:16px 14px;border-radius:18px;margin-bottom:14px}
   .ctitle{font-size:1.02rem;margin-bottom:12px}
-  .grid{grid-template-columns:1fr;gap:12px}
+  .grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  .pbody .card{padding:14px 12px}
+  .inp span{margin-left:6px;font-size:.88rem}
   .inp{height:50px;padding:0 12px}.inp input,.inp select{font-size:1.08rem}
   .help{font-size:.8rem}
   .seg{width:100%}.seg button{flex:1 1 auto;padding:9px 10px;font-size:.92rem}
@@ -372,7 +376,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
   .phead h3{font-size:1.18rem;flex-wrap:wrap;gap:6px}
   .phead h3 small{flex-basis:100%;font-size:.84rem;margin:0}
   /* 요약 카드 */
-  .stats{grid-template-columns:repeat(2,1fr);gap:8px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .stat{padding:12px 12px;border-radius:16px}
   .stat .sh{font-size:.8rem;gap:6px}
   .stat .ic{flex-basis:26px;height:26px;border-radius:8px}.stat .ic svg{width:15px;height:15px}
@@ -501,10 +505,10 @@ details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
         <p class="ctitle"><span class="n" style="background:var(--c1)">1</span>수령 정보</p>
         <div class="grid">
           <div class="field"><label for="p1_type">연금 종류</label><div class="inp"><select id="p1_type"><option value="gov">공무원연금 (국공립 교원)</option><option value="pri">사학연금 (사립 교원)</option></select></div><p class="help">지급 규칙은 거의 같아요</p></div>
-          <div class="field"><label for="p1_start">연금 <span class="term" data-g="startage">개시 나이</span></label><div class="inp"><select id="p1_smode" style="flex:0 0 auto;width:auto;font-size:.92rem;color:var(--g700);margin-right:8px"><option value="auto">자동</option><option value="manual">직접</option></select><input type="number" id="p1_start" value="65"><span>세</span></div><p class="help" id="p1_start_h">퇴직연도별 60~65세 (2033년 이후 65세)</p></div>
+          <div class="field"><label for="p1_start">연금 <span class="term" data-g="startage">개시 나이</span></label><div class="inp"><select id="p1_smode" style="flex:0 0 auto;width:auto;font-size:.92rem;color:var(--g700);margin-right:8px;text-align:left"><option value="auto">자동</option><option value="manual">직접</option></select><input type="number" id="p1_start" value="65"><span>세</span></div><p class="help" id="p1_start_h">퇴직연도별 60~65세 (2033년 이후 65세)</p></div>
           <div class="field"><label for="p1_month">예상 월 연금액 (<span class="term" data-g="pv">현재가치</span>)</label><div class="inp"><input type="number" id="p1_month" value="230" step="5"><span>만원/월</span></div><p class="help">공무원연금공단 '예상 퇴직급여' 조회값</p></div>
           <div class="field"><label for="p1_early"><span class="term" data-g="early">조기 수령 감액</span></label><div class="inp"><select id="p1_early"><option value="0">없음 (정상 수령)</option><option value="1">1년 앞당김 (−5%)</option><option value="2">2년 (−10%)</option><option value="3">3년 (−15%)</option><option value="4">4년 (−20%)</option><option value="5">5년 (−25%)</option></select></div></div>
-          <div class="field"><label for="p1_taxr"><span class="term" data-g="taxr1">과세대상 비율</span></label><div class="inp"><select id="p1_tmode" style="flex:0 0 auto;width:auto;font-size:.92rem;color:var(--g700);margin-right:8px"><option value="auto">자동</option><option value="manual">직접</option></select><input type="number" id="p1_taxr" value="60" step="1"><span>%</span></div><p class="help" id="p1_taxr_h">2002년 이후 기여분 비중</p></div>
+          <div class="field"><label for="p1_taxr"><span class="term" data-g="taxr1">과세대상 비율</span></label><div class="inp"><select id="p1_tmode" style="flex:0 0 auto;width:auto;font-size:.92rem;color:var(--g700);margin-right:8px;text-align:left"><option value="auto">자동</option><option value="manual">직접</option></select><input type="number" id="p1_taxr" value="60" step="1"><span>%</span></div><p class="help" id="p1_taxr_h">2002년 이후 기여분 비중</p></div>
         </div>
         <div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6f9f" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg><span>공무원연금은 매년 <span class="term" data-g="index">물가연동</span>으로 올라요. 세금은 <span class="term" data-g="compTax">종합과세</span> 방식으로 추정합니다.</span></div>
       </div>
