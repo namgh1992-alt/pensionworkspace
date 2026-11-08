@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온투의 연금 계산기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --g900:#0b3a2c; --g800:#0f4d3a; --g700:#0f6b4f; --g600:#138a63; --g500:#1fa676; --g200:#bfe5d2; --g100:#e2f3ea; --g50:#f1f9f5;
+  --ink:#16231e; --ink2:#3c4a44; --muted:#6c7a73; --line:rgba(15,77,58,.14); --line2:rgba(15,77,58,.08);
+  --glass:rgba(255,255,255,.66); --glass2:rgba(255,255,255,.82);
+  --c1:#2f6f9f; --c1l:#e3eef7; --c2:#1e9b6e; --c2l:#e1f4ec; --c3:#a5c23a; --c3d:#5f7414; --c3l:#f1f6dd;
+  --tax:#b4bdb8; --warn:#b3261e; --rail:76px;
+}
+*{box-sizing:border-box}
+html{font-size:17px}
+html.big{font-size:19.5px}
+body{margin:0;color:var(--ink);font-family:'Noto Sans KR',system-ui,-apple-system,'Malgun Gothic',sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;
+  background:#e9efe9;}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(135deg,#eef4ee 0%,#e4eee6 45%,#efe9dc 100%)}
+.bg i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.75}
+.bg i:nth-child(1){width:46vw;height:46vw;left:-10vw;top:-12vw;background:#a9dcc2}
+.bg i:nth-child(2){width:38vw;height:38vw;right:-8vw;top:10vh;background:#d8e8a8;opacity:.55}
+.bg i:nth-child(3){width:50vw;height:40vw;left:25vw;bottom:-18vw;background:#e8d6b4;opacity:.55}
+.bg i:nth-child(4){width:28vw;height:28vw;left:40vw;top:30vh;background:#8fcfb0;opacity:.35}
+
+/* ---------- sidebar (glass) ---------- */
+.nav{position:fixed;left:16px;top:16px;bottom:16px;width:var(--rail);z-index:50;border-radius:30px;
+  background:linear-gradient(180deg,rgba(18,60,46,.72),rgba(14,48,37,.62) 60%,rgba(60,70,40,.55));
+  backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.22);box-shadow:0 18px 50px rgba(10,40,30,.28), inset 0 1px 0 rgba(255,255,255,.18);
+  color:#f2f7f4;display:flex;flex-direction:column;padding:14px 12px;overflow:hidden;transition:width .38s cubic-bezier(.3,.8,.3,1)}
+.nav:hover,.nav:focus-within{width:290px}
+.nav *{white-space:nowrap}
+.nav .lbl{opacity:0;transform:translateX(-6px);transition:opacity .2s, transform .25s}
+.nav:hover .lbl,.nav:focus-within .lbl{opacity:1;transform:none;transition-delay:.08s}
+.brand{display:flex;align-items:center;gap:12px;padding:2px 2px 12px}
+.logo{flex:0 0 48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25), 0 0 0 2px rgba(255,255,255,.6);overflow:hidden}
+.logo img{width:100%;height:100%;object-fit:cover;display:block}
+.brand b{display:block;font-size:1.05rem}
+.brand small{display:block;font-size:.8rem;color:rgba(242,247,244,.65)}
+.search{display:flex;align-items:center;gap:10px;height:48px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);padding:0 13px;margin:2px 0 10px}
+.search svg{flex:0 0 22px}
+.search input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#fff;font:inherit;font-size:.95rem}
+.search input::placeholder{color:rgba(242,247,244,.55)}
+.search kbd{font-family:inherit;font-size:.72rem;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:0 6px;color:rgba(255,255,255,.7)}
+.ngroup{font-size:.72rem;letter-spacing:.12em;color:rgba(242,247,244,.5);font-weight:700;height:26px;display:flex;align-items:center;padding-left:14px;position:relative}
+.ngroup::before{content:'';position:absolute;left:14px;top:50%;width:24px;height:2px;border-radius:2px;background:rgba(255,255,255,.25);transition:opacity .2s}
+.nav:hover .ngroup::before,.nav:focus-within .ngroup::before{opacity:0}
+.nitem{position:relative;display:flex;align-items:center;gap:14px;height:52px;border-radius:18px;padding:0 15px;color:#eef5f1;text-decoration:none;font-weight:500;font-size:1rem;cursor:pointer;border:1px solid transparent;background:none;width:100%;font-family:inherit;text-align:left;transition:background .2s}
+.nitem svg{flex:0 0 22px;width:22px;height:22px}
+.nitem:hover{background:rgba(255,255,255,.08)}
+.nitem.on{background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.1));border-color:rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.18)}
+.nitem .badge{margin-left:auto;min-width:24px;height:24px;border-radius:12px;background:rgba(255,255,255,.16);font-size:.78rem;display:grid;place-items:center;padding:0 7px;font-weight:700}
+.nitem .badge.hot{background:#e8743b;color:#fff}
+.nitem .dotb{margin-left:auto;width:10px;height:10px;border-radius:50%;background:#e8743b}
+.nitem .pip{position:absolute;left:38px;top:9px;width:11px;height:11px;border-radius:50%;background:#e8743b;border:2px solid rgba(20,55,42,.9);transition:opacity .2s}
+.nav:hover .pip,.nav:focus-within .pip{opacity:0}
+.ntree{margin:2px 0 4px 26px;border-left:1.5px solid rgba(255,255,255,.2);max-height:0;overflow:hidden;transition:max-height .35s}
+.nav:hover .ntree,.nav:focus-within .ntree{max-height:180px}
+.ntree button{display:flex;align-items:center;gap:10px;height:40px;width:100%;background:none;border:0;color:rgba(242,247,244,.85);font:inherit;font-size:.93rem;cursor:pointer;padding:0 0 0 16px;position:relative;border-radius:0 12px 12px 0}
+.ntree button::before{content:'';position:absolute;left:0;top:50%;width:10px;border-top:1.5px solid rgba(255,255,255,.2)}
+.ntree button:hover{background:rgba(255,255,255,.06)}
+.ntree i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.nsp{flex:1}
+.ntoggle{display:flex;align-items:center;gap:14px;height:50px;padding:0 15px;border-radius:18px;cursor:pointer;width:100%;background:none;border:0;color:#eef5f1;font:inherit}
+.ntoggle svg{flex:0 0 22px}
+.sw{margin-left:auto;width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,.2);position:relative;transition:background .2s;flex:0 0 46px}
+.sw::after{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
+html.big .sw{background:var(--g500)}html.big .sw::after{transform:translateX(20px)}
+.me{display:flex;align-items:center;gap:12px;padding:10px 2px 2px;border-top:1px solid rgba(255,255,255,.12);margin-top:6px}
+.me .av{flex:0 0 48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#d8e8a8,#1fa676);display:grid;place-items:center;font-weight:900;color:#0b3a2c;position:relative;font-size:.95rem}
+.me .av::after{content:'';position:absolute;right:0;bottom:1px;width:12px;height:12px;border-radius:50%;background:#43d17f;border:2px solid #143b2e}
+.me b{display:block;font-size:.98rem}.me small{display:block;font-size:.8rem;color:rgba(242,247,244,.65)}
+@media (max-width:820px){
+  .nav{left:8px;right:8px;top:auto;bottom:8px;width:auto;height:70px;flex-direction:row;padding:9px;border-radius:24px;justify-content:space-around}
+  .nav:hover,.nav:focus-within{width:auto}
+  .nav .brand,.nav .search,.nav .ngroup,.nav .ntree,.nav .nsp,.nav .me,.nav .lbl,.nav .badge,.nav .dotb{display:none}
+  .nitem,.ntoggle{width:52px;height:52px;padding:0;justify-content:center;flex:0 0 52px}
+  .ntoggle .sw{display:none}
+  .nitem .pip{left:30px;top:7px}
+}
+
+/* ---------- main ---------- */
+.main{margin-left:calc(var(--rail) + 40px);padding:26px 34px 60px 0;max-width:1240px}
+@media (max-width:820px){.main{margin:0;padding:16px 12px 100px}}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.top h1{font-size:2rem;font-weight:900;margin:0;letter-spacing:-.02em;color:var(--g900)}
+.top p{margin:0;color:var(--ink2)}
+.crumbs{display:flex;gap:8px;flex-wrap:wrap}
+.crumbs a{text-decoration:none;font-weight:700;font-size:.92rem;color:var(--g700);padding:7px 14px;border-radius:999px;background:var(--glass);border:1px solid rgba(255,255,255,.7);backdrop-filter:blur(10px)}
+.crumbs a.on{background:var(--g700);color:#fff;border-color:var(--g700)}
+.crumbs a b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(15,107,79,.12);font-size:.75rem;margin-right:6px}
+.crumbs a.on b{background:rgba(255,255,255,.25)}
+.view{display:none;animation:fadeup .45s ease}
+.view.on{display:block}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.vhead{margin:8px 0 18px}
+.eyebrow{font-size:.82rem;font-weight:800;letter-spacing:.14em;color:var(--g600)}
+.vhead h2{font-size:1.7rem;font-weight:900;margin:2px 0 4px;color:var(--g900);letter-spacing:-.01em}
+.vhead p{margin:0;color:var(--ink2)}
+
+.card{background:var(--glass);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);border:1px solid rgba(255,255,255,.75);border-radius:24px;padding:24px 26px;margin:0 0 18px;box-shadow:0 10px 30px rgba(15,77,58,.08)}
+@media (max-width:760px){.card{padding:18px 14px;border-radius:18px}}
+.card.solid{background:var(--glass2)}
+.ctitle{font-weight:800;font-size:1.12rem;margin:0 0 16px;display:flex;align-items:center;gap:10px;color:var(--g900)}
+.ctitle .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--g700);color:#fff;font-size:.9rem}
+.ctitle small{font-weight:500;color:var(--muted);font-size:.9rem}
+.next{display:flex;justify-content:flex-end;margin-top:6px}
+
+/* fields */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:16px 18px}
+.field label{display:block;font-weight:700;font-size:.98rem;margin-bottom:6px;color:var(--ink)}
+.inp{display:flex;align-items:center;min-width:0;border:1.5px solid rgba(15,77,58,.22);border-radius:14px;background:rgba(255,255,255,.9);height:54px;padding:0 15px;transition:border-color .15s, box-shadow .15s}
+.inp:focus-within{border-color:var(--g600);box-shadow:0 0 0 4px rgba(19,138,99,.15)}
+.inp input,.inp select{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:1.15rem;font-weight:700;color:var(--ink);background:transparent;text-align:right;padding:0}
+.inp select{text-align:left;font-size:1rem;cursor:pointer}
+.inp span{margin-left:8px;color:var(--muted);font-weight:500;white-space:nowrap}
+.help{margin:5px 2px 0;font-size:.84rem;color:var(--muted);line-height:1.45}
+.seg{display:inline-flex;border-radius:14px;overflow:hidden;flex-wrap:wrap;background:rgba(15,77,58,.07);padding:4px;gap:4px}
+.seg button{font:inherit;font-weight:700;font-size:1rem;border:0;background:transparent;color:var(--ink2);padding:10px 18px;cursor:pointer;border-radius:10px}
+.seg button.on{background:var(--g700);color:#fff;box-shadow:0 3px 10px rgba(15,107,79,.3)}
+.chk{display:inline-flex;align-items:center;gap:10px;font-weight:700;cursor:pointer;font-size:1rem}
+.chk input{width:22px;height:22px;accent-color:var(--g600)}
+.row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.btn{font:inherit;font-weight:700;border:1.5px solid var(--g600);color:var(--g700);background:rgba(255,255,255,.8);border-radius:12px;padding:10px 18px;cursor:pointer;font-size:.98rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:var(--g100)}
+.btn.solid{background:var(--g700);color:#fff;border-color:var(--g700)}
+.btn.solid:hover{background:var(--g800)}
+.btn.sm{padding:6px 12px;font-size:.9rem}
+.btn.x{border-color:rgba(15,77,58,.2);color:var(--muted)}
+.note{font-size:.88rem;color:var(--muted);line-height:1.6}
+.note b{color:var(--ink2)}
+.warntext{color:var(--warn);font-weight:700;font-size:.9rem}
+.tip{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.6);border-radius:14px;padding:12px 14px;font-size:.9rem;color:var(--ink2);margin-top:14px}
+.tip svg{flex:0 0 20px;margin-top:2px}
+
+/* glossary term */
+.term{border-bottom:1.5px dotted var(--g600);cursor:help;color:inherit;position:relative}
+.term::after{content:'?';display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--g100);color:var(--g700);font-size:.66rem;font-weight:900;margin-left:3px;vertical-align:2px;line-height:1}
+.term:hover{color:var(--g700);background:var(--g50)}
+.pop{position:fixed;z-index:100;max-width:340px;width:calc(100vw - 24px);background:rgba(14,48,37,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:#f1f7f3;border-radius:18px;padding:16px 18px 16px;box-shadow:0 18px 40px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.18);display:none;font-size:.95rem;line-height:1.65}
+.pop.on{display:block;animation:popin .2s ease}
+@keyframes popin{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.pop h4{margin:0 0 6px;font-size:1.08rem;color:#bff0d6;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pop h4 button{background:rgba(255,255,255,.12);border:0;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem}
+.pop p{margin:0}
+.pop .ex{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.08);font-size:.88rem;color:#d7ebe0}
+
+/* pyramid */
+.pyr-wrap{display:grid;grid-template-columns:1fr 270px;gap:26px;align-items:center}
+@media (max-width:980px){.pyr-wrap{grid-template-columns:1fr}}
+.pyramid{display:flex;flex-direction:column;align-items:center;gap:9px;max-width:760px;margin:0 auto;width:100%;filter:drop-shadow(0 12px 18px rgba(15,77,58,.18))}
+.tier{position:relative;border:0;cursor:pointer;color:#fff;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;height:118px;overflow:hidden;transform-origin:50% 100%;transition:filter .2s, opacity .2s;padding:0}
+.tier::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 55%);pointer-events:none}
+.tier:hover{filter:brightness(1.06)}
+.tier:focus-visible{outline:none;filter:brightness(1.12)}
+.tier.t3{width:48%;clip-path:polygon(27.08% 0,72.92% 0,100% 100%,0 100%);background:var(--c3);color:#1f2a08}
+.tier.t2{width:74%;clip-path:polygon(17.57% 0,82.43% 0,100% 100%,0 100%);background:var(--c2)}
+.tier.t1{width:100%;clip-path:polygon(13% 0,87% 0,100% 100%,0 100%);background:var(--c1)}
+.tier .tl{font-size:1.02rem;font-weight:700;opacity:.95;position:relative}
+.tier .tl b{font-size:1.45rem;font-weight:900;margin-right:6px}
+.tier .tv{font-size:1.28rem;font-weight:900;margin-top:2px;position:relative}
+.tier .ts{font-size:.85rem;opacity:.9;font-weight:500;position:relative}
+.tier.t3 .ts{display:none}
+.tier.active::after{content:'';position:absolute;left:50%;bottom:6px;border:9px solid transparent;border-bottom:0;border-top:10px solid rgba(255,255,255,.95);transform:translateX(-50%)}
+.tier.t3.active::after{border-top-color:#1f2a08}
+.tier.wave{animation:wave .85s cubic-bezier(.3,.7,.3,1)}
+@keyframes wave{0%{transform:scale(1,1)}18%{transform:scale(1.07,1.16)}38%{transform:scale(.96,.9)}58%{transform:scale(1.035,1.06)}78%{transform:scale(.99,.98)}100%{transform:scale(1,1)}}
+.ripple{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.45);transform:translate(-50%,-50%) scale(0);animation:rip .9s ease-out forwards}
+@keyframes rip{to{transform:translate(-50%,-50%) scale(1);opacity:0}}
+.pyr-legend{display:flex;flex-direction:column;gap:10px}
+.pyr-legend button{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.8);text-align:left;font:inherit;cursor:pointer;color:inherit}
+.pyr-legend button:hover{background:rgba(255,255,255,.85)}
+.pyr-legend i{flex:0 0 14px;height:14px;border-radius:5px;margin-top:5px}
+.pyr-legend b{display:block}
+.pyr-legend span{color:var(--muted);font-size:.86rem}
+.hint{text-align:center;color:var(--g700);font-weight:700;margin:14px 0 0;font-size:1rem}
+.hint span{display:inline-block;animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-4px)}}
+
+/* panel (no wave line) */
+.panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(.3,.7,.3,1)}
+.panel.open{grid-template-rows:1fr;margin-top:20px}
+.panel>.pin{overflow:hidden;min-height:0}
+.pbody{border-radius:26px;padding:24px 24px 8px;background:rgba(255,255,255,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.8);box-shadow:0 14px 40px rgba(15,77,58,.1)}
+@media (max-width:760px){.pbody{padding:16px 10px 4px}}
+.panel[data-t="1"] .pbody{background:linear-gradient(180deg,rgba(227,238,247,.85),rgba(255,255,255,.45) 220px)}
+.panel[data-t="2"] .pbody{background:linear-gradient(180deg,rgba(225,244,236,.9),rgba(255,255,255,.45) 220px)}
+.panel[data-t="3"] .pbody{background:linear-gradient(180deg,rgba(241,246,221,.9),rgba(255,255,255,.45) 220px)}
+.panel.open .pbody{animation:rise .6s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(-14px) scale(.985)}to{opacity:1;transform:none}}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 4px 18px}
+.phead h3{margin:0;font-size:1.45rem;font-weight:900;display:flex;align-items:center;gap:10px}
+.phead h3 .chip{font-size:.85rem;font-weight:800;padding:3px 10px;border-radius:999px;color:#fff}
+.phead h3 small{font-size:.98rem;color:var(--muted);font-weight:500}
+.pbody .card{background:rgba(255,255,255,.78)}
+
+/* stats (redesigned KPI) */
+.stats{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:12px;margin:0 0 18px}
+@media (max-width:1080px){.stats{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:20px;padding:16px 18px 15px;box-shadow:0 6px 18px rgba(15,77,58,.07);display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .sh{display:flex;align-items:center;gap:9px;font-size:.92rem;font-weight:700;color:var(--ink2)}
+.stat .ic{flex:0 0 34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--g100);color:var(--g700)}
+.stat .ic svg{width:19px;height:19px}
+.stat .sv{font-size:1.8rem;font-weight:900;letter-spacing:-.02em;line-height:1.2;margin-top:8px;color:var(--g900)}
+.stat .sv small{font-size:1rem;font-weight:700;color:var(--ink2);margin-left:3px}
+.stat .ss{font-size:.86rem;color:var(--muted)}
+.stat.hero{background:linear-gradient(150deg,#138a63,#0f6b4f);color:#fff;border-color:transparent}
+.stat.hero .sh,.stat.hero .ss,.stat.hero .sv small{color:rgba(255,255,255,.85)}
+.stat.hero .sv{color:#fff}
+.stat.hero .ic{background:rgba(255,255,255,.18);color:#fff}
+.stat.c1 .ic{background:var(--c1l);color:var(--c1)}.stat.c3 .ic{background:var(--c3l);color:var(--c3d)}
+
+/* method cards */
+.methods{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media (max-width:1180px){.methods{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
+.mcard{text-align:left;font:inherit;color:inherit;background:rgba(255,255,255,.75);border:1.5px solid rgba(15,77,58,.12);border-radius:18px;padding:15px 15px;cursor:pointer;position:relative;transition:border-color .15s, box-shadow .15s, background .15s}
+.mcard:hover{border-color:var(--g500)}
+.mcard.on{border:2px solid var(--g600);background:#fff;box-shadow:0 8px 20px rgba(19,138,99,.15)}
+.mcard .mt{font-weight:900;font-size:1.06rem;padding-right:24px}
+.mcard .mtag{display:inline-block;font-size:.76rem;font-weight:700;color:var(--g700);background:var(--g100);border-radius:999px;padding:1px 9px;margin:5px 0 6px}
+.mcard .mh{font-size:.88rem;color:var(--ink2);line-height:1.45}
+.mcard .mf{font-size:.8rem;color:var(--muted);margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}
+.mcard .dot{position:absolute;top:15px;right:14px;width:20px;height:20px;border-radius:50%;border:2px solid rgba(15,77,58,.25)}
+.mcard.on .dot{border-color:var(--g600);background:radial-gradient(var(--g600) 45%,#fff 50%)}
+.mparams{margin-top:16px;padding:18px;border-radius:16px;background:var(--g50);border:1px solid var(--g200)}
+.callout{border-radius:16px;background:var(--g50);border:1px solid var(--g200);padding:14px 18px;margin:14px 0 0;font-size:1rem}
+.callout b.big{font-size:1.22rem;color:var(--g700)}
+.callout.warn{background:#fbf6e6;border-color:#eadfb8}
+
+/* charts & tables */
+.fig{margin:4px 0 4px}
+.fig-h{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding-bottom:8px;margin-bottom:10px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.fig-h .ft{font-weight:800;font-size:1.05rem;color:var(--g900)}
+.fig-h .fu{font-size:.85rem;color:var(--muted)}
+.fig-src{font-size:.8rem;color:var(--muted);margin:8px 0 0}
+.chartbox{position:relative;height:330px}
+.chartbox.tall{height:430px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.95rem;font-weight:700;margin:2px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:14px;height:14px;border-radius:5px;display:inline-block}
+.legend i.ln{height:3px;border-radius:2px;width:22px}
+.legend i.dash{height:0;border-top:3px dashed var(--ink);width:22px;border-radius:0;background:none!important}
+.tbl-wrap{max-height:520px;overflow:auto;border-radius:14px;background:rgba(255,255,255,.75);border:1px solid var(--line2)}
+table{border-collapse:collapse;width:100%;font-size:.95rem;font-variant-numeric:tabular-nums}
+th,td{padding:10px 11px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line2)}
+th{position:sticky;top:0;background:#f4faf7;font-weight:800;color:var(--g900);z-index:1;font-size:.88rem;border-bottom:1px solid var(--line)}
+td:first-child,th:first-child{text-align:center}
+tbody tr:hover td{background:#f5fbe9}
+td.hl{background:rgba(30,155,110,.08)}
+th.hl{background:#e1f2ea}
+tr.mile td{font-weight:800;background:rgba(15,77,58,.04)}
+tr.mile td.hl{background:rgba(30,155,110,.14)}
+tr.dead td{color:#a9b3ae}
+.pill{display:inline-block;font-size:.78rem;font-weight:700;border-radius:999px;padding:1px 9px;background:#eef2f0;color:var(--ink2)}
+.pill.sep{background:#fde8e6;color:#a3261e}
+.pill.comp{background:var(--c1l);color:#24577e}
+.pill.out{background:#fff1d6;color:#8a5200}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
+.ovr-row{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.ovr-row .inp{height:46px;width:150px}
+details.est{margin-top:4px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.7);border:1px dashed var(--c1)}
+details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:980px){.twocol{grid-template-columns:1fr}}
+.twocol .card{margin:0}
+.sumline{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+.sumline span{background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.9);border-radius:999px;padding:7px 14px;font-weight:700;font-size:.93rem}
+.sumline span.bad{background:#fdecea;color:#9f2a20;border-color:#f6d0cb}
+.sumline span.good{background:var(--g100);color:var(--g700)}
+/* advisor */
+.adv{background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(241,249,245,.9));border:1.5px solid var(--g200);border-radius:22px;padding:18px 20px;margin:0 0 18px;box-shadow:0 8px 24px rgba(15,77,58,.08)}
+.adv-h{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.12rem;color:var(--g900);margin-bottom:8px}
+.adv-h .bulb{width:34px;height:34px;border-radius:11px;background:linear-gradient(150deg,#1fa676,#0f6b4f);display:grid;place-items:center;color:#fff}
+.adv-h small{font-weight:500;color:var(--muted);font-size:.85rem}
+.adv-d{margin:0 0 10px;padding:0;list-style:none;font-size:.93rem;color:var(--ink2)}
+.adv-d li{padding:3px 0 3px 18px;position:relative}
+.adv-d li::before{content:'';position:absolute;left:4px;top:12px;width:6px;height:6px;border-radius:50%;background:var(--g500)}
+.adv-d li.bad::before{background:#d9534f}
+.rec{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 4px;border-top:1px dashed var(--line)}
+.rec .no{width:30px;height:30px;border-radius:50%;background:var(--g100);color:var(--g700);font-weight:900;display:grid;place-items:center}
+.rec.best .no{background:var(--g700);color:#fff}
+.rec b.t{display:block;font-size:1.02rem}
+.rec .why{font-size:.86rem;color:var(--muted);line-height:1.45}
+.rec .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.chipv{font-size:.8rem;font-weight:800;border-radius:999px;padding:2px 9px;background:#eef2f0;color:var(--ink2)}
+.chipv.up{background:var(--g100);color:var(--g700)}.chipv.dn{background:#fdecea;color:#a3261e}
+@media (max-width:760px){.rec{grid-template-columns:30px 1fr}.rec .btn{grid-column:2}}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(30px);opacity:0;pointer-events:none;background:rgba(14,48,37,.92);backdrop-filter:blur(14px);color:#fff;border-radius:16px;padding:12px 16px 12px 20px;display:flex;gap:14px;align-items:center;font-weight:700;z-index:120;transition:.3s;box-shadow:0 14px 30px rgba(0,0,0,.25)}
+.toast.on{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{background:rgba(255,255,255,.16);border:0;color:#fff;font:inherit;font-weight:800;border-radius:10px;padding:7px 12px;cursor:pointer}
+.adv-best{background:linear-gradient(135deg,#138a63,#0f6b4f);color:#fff;border-radius:16px;padding:14px 18px;margin:4px 0 12px;box-shadow:0 8px 20px rgba(15,107,79,.25)}
+.adv-best .ab-k{font-size:.85rem;font-weight:700;opacity:.85}
+.adv-best .ab-v{font-size:1.28rem;font-weight:900;margin-top:2px;line-height:1.4}
+.adv-best .ab-v b{color:#e9f6b9}
+.adv-best .ab-s{font-size:.9rem;margin-top:5px;opacity:.95}
+.adv-best .ab-s span{color:#ffd9d4!important;font-weight:700}
+.adv-best .ab-t{font-size:.82rem;opacity:.75;margin-top:6px;border-top:1px solid rgba(255,255,255,.2);padding-top:6px}
+.bands{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
+.bands span{background:rgba(255,255,255,.85);border:1px solid var(--g200);border-radius:12px;padding:6px 12px;font-size:.9rem;color:var(--ink2)}
+.bands span b{display:block;font-size:1.12rem;color:var(--g900)}
+.inp input[readonly]{color:var(--g700);cursor:default}
+.inp:has(input[readonly]){background:var(--g50);border-color:var(--g200)}
+.autotag{display:inline-block;font-size:.75rem;font-weight:800;color:#fff;background:var(--g600);border-radius:999px;padding:0 8px;margin-right:4px}
+/* glossary list */
+.gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.gl div{background:rgba(255,255,255,.75);border-radius:16px;padding:14px 16px;border:1px solid rgba(255,255,255,.9)}
+.gl b{color:var(--g700);font-size:1.05rem}
+.gl p{margin:4px 0 0;font-size:.93rem;color:var(--ink2)}
+.gl .ex{font-size:.85rem;color:var(--muted);margin-top:6px}
+.gl mark{background:#e9f6b9;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="bg"><i></i><i></i><i></i><i></i></div>
+
+<!-- ============ SIDEBAR ============ -->
+<nav class="nav" id="nav" aria-label="메뉴">
+  <div class="brand"><div class="logo"><img src="data:image/png;base64,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" alt="온투"></div><div class="lbl"><b>온투의 연금 계산기</b><small>Retirement workspace</small></div></div>
+  <label class="search" title="용어 찾기">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input class="lbl" id="navSearch" placeholder="어려운 용어 찾기"><kbd class="lbl">용어</kbd>
+  </label>
+  <div class="ngroup"><span class="lbl">설계 단계</span></div>
+  <a class="nitem" href="#basic" data-v="basic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span class="lbl">1. 기본 정보</span></a>
+  <a class="nitem" href="#layers" data-v="layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5" opacity=".6"/></svg><span class="lbl">2. 연금 3층 구조</span><span class="badge lbl">3</span></a>
+  <div class="ntree">
+    <button data-tier="3"><i style="background:var(--c3)"></i><span class="lbl">3층 개인연금</span></button>
+    <button data-tier="2"><i style="background:var(--c2)"></i><span class="lbl">2층 퇴직수당 · 명퇴수당</span></button>
+    <button data-tier="1"><i style="background:var(--c1)"></i><span class="lbl">1층 공무원 · 사학연금</span></button>
+  </div>
+  <a class="nitem" href="#total" data-v="total"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 20V11M10 20V6M15 20v-7M20 20V9"/></svg><span class="lbl">3. 합산 결과</span><span class="pip" id="pipTotal"></span><span class="dotb lbl" id="dotTotal"></span></a>
+  <div class="ngroup"><span class="lbl">도움말</span></div>
+  <a class="nitem" href="#guide" data-v="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 8h6"/></svg><span class="lbl">용어 사전 · 계산 가정</span><span class="badge hot lbl" id="glCount">0</span></a>
+  <div class="nsp"></div>
+  <button class="ntoggle" id="bigToggle" title="글자 크게"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 19 8 5l5 14M4.8 14h6.4M15 19l3-8 3 8M15.9 16.5h4.2"/></svg><span class="lbl">글자 크게 보기</span><span class="sw lbl"></span></button>
+  <div class="me"><div class="av">₩</div><div class="lbl"><b id="meTop">—</b><small id="meSub">세후 월 수령액</small></div></div>
+</nav>
+
+<div class="toast" id="toast"><span id="toastT">추천을 적용했어요</span><button id="toastU">되돌리기</button></div>
+<div class="pop" id="pop" role="dialog"><h4><span id="popT"></span><button id="popX" aria-label="닫기">×</button></h4><p id="popD"></p><div class="ex" id="popE"></div></div>
+
+<main class="main">
+  <div class="top">
+    <div><h1>온투의 연금 계산기</h1><p>연금 3층 설계 — 매년 얼마를, 몇 살까지 받는지 한눈에 · 단위: 만원</p></div>
+    <div class="crumbs" id="crumbs">
+      <a href="#basic" data-v="basic"><b>1</b>기본 정보</a><a href="#layers" data-v="layers"><b>2</b>3층 구조</a><a href="#total" data-v="total"><b>3</b>합산 결과</a>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: BASIC ============ -->
+  <section class="view" id="v-basic">
+    <div class="vhead"><div class="eyebrow">STEP 1</div><h2>기본 정보</h2><p>세 층 모두에 공통으로 쓰이는 값입니다. 점선 밑줄 단어를 누르면 쉬운 설명이 나와요.</p></div>
+    <div class="card">
+      <p class="ctitle"><span class="n">1</span>나이와 물가</p>
+      <div class="grid">
+        <div class="field"><label for="g_cur">현재 나이</label><div class="inp"><input type="number" id="g_cur" value="50" min="20" max="90"><span>세</span></div></div>
+        <div class="field"><label for="g_end"><span class="term" data-g="life">기대수명</span> (계산 종료)</label><div class="inp"><input type="number" id="g_end" value="90" min="60" max="110"><span>세</span></div></div>
+        <div class="field"><label for="g_inf"><span class="term" data-g="inf">물가상승률</span></label><div class="inp"><input type="number" id="g_inf" value="2.5" step="0.1"><span>% / 년</span></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <p class="ctitle"><span class="n">2</span>생활비와 다른 소득</p>
+      <div class="grid">
+        <div class="field"><label for="g_target"><span class="term" data-g="target">목표 생활비</span> (<span class="term" data-g="pv">현재가치</span>)</label><div class="inp"><input type="number" id="g_target" value="300" step="10"><span>만원/월</span></div><p class="help">합산 그래프에 점선으로 표시돼요</p></div>
+        <div class="field"><label for="g_inherit">기대수명 이후 남는 돈</label><div class="inp"><select id="g_inherit"><option value="yes">가족에게 상속 — 가치로 계산</option><option value="no">계산하지 않음</option></select></div><p class="help">추천을 고를 때 남는 돈을 어떻게 볼지</p></div>
+        <div class="field"><label for="g_other">연금 외 <span class="term" data-g="comp_inc">종합소득</span> <span class="term" data-g="taxbase">과세표준</span></label><div class="inp"><input type="number" id="g_other" value="0" step="100"><span>만원/년</span></div><p class="help">임대·사업소득 등. 없으면 0</p></div>
+      </div>
+    </div>
+    <div class="next"><a class="btn solid" href="#layers">다음: 연금 3층 구조 →</a></div>
+  </section>
+
+  <!-- ============ VIEW: LAYERS ============ -->
+  <section class="view" id="v-layers">
+    <div class="vhead"><div class="eyebrow">STEP 2</div><h2>연금 3층 구조</h2><p>층을 누르면 그 층의 입력창이 열립니다.</p></div>
+    <div class="card">
+      <div class="pyr-wrap">
+        <div>
+          <div class="pyramid">
+            <button class="tier t3" data-t="3"><span class="tl"><b>3층</b>개인연금</span><span class="tv" id="tv3">월 —</span><span class="ts" id="ts3"></span></button>
+            <button class="tier t2" data-t="2"><span class="tl"><b>2층</b>퇴직수당 · 명예퇴직수당</span><span class="tv" id="tv2">월 —</span><span class="ts" id="ts2"></span></button>
+            <button class="tier t1" data-t="1"><span class="tl"><b>1층</b>공적연금 (<span id="tier1name">공무원연금</span>)</span><span class="tv" id="tv1">월 —</span><span class="ts" id="ts1"></span></button>
+          </div>
+          <p class="hint"><span>▲</span> 층을 눌러 정보를 입력하세요</p>
+        </div>
+        <div class="pyr-legend">
+          <button data-tier="3"><i style="background:var(--c3)"></i><p style="margin:0"><b>3층 · 개인연금</b><span>연금저축·IRP 개인납입분, 수령방식·세금</span></p></button>
+          <button data-tier="2"><i style="background:var(--c2)"></i><p style="margin:0"><b>2층 · 퇴직급여</b><span>교원 퇴직수당·명예퇴직수당 → IRP</span></p></button>
+          <button data-tier="1"><i style="background:var(--c1)"></i><p style="margin:0"><b>1층 · 공적연금</b><span>공무원연금·사학연금 월 수령액</span></p></button>
+          <p class="note" style="margin:2px 4px 0">피라미드 금액 = <b>각 층 첫해 세전 월 수령액</b></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 1 -->
+    <div class="panel" id="panel1" data-t="1"><div class="pin"><div class="pbody">
+      <div class="phead"><h3 style="color:var(--c1)"><span class="chip" style="background:var(--c1)">1층</span><span id="p1_name">공무원연금</span><small><span class="term" data-g="public">공적연금</span></small></h3><label class="chk"><input type="checkbox" id="p1_on" checked> 합산에 포함</label></div>
+      <div class="adv" id="adv1"></div>
+      <div class="card">
+        <p class="ctitle"><span class="n" style="background:var(--c1)">1</span>수령 정보</p>
+        <div class="grid">
+          <div class="field"><label for="p1_type">연금 종류</label><div class="inp"><select id="p1_type"><option value="gov">공무원연금 (국공립 교원)</option><option value="pri">사학연금 (사립 교원)</option></select></div><p class="help">지급 규칙은 거의 같아요</p></div>
+          <div class="field"><label for="p1_start">연금 <span class="term" data-g="startage">개시 나이</span></label><div class="inp"><select id="p1_smode" style="flex:0 0 auto;width:auto;font-size:.92rem;color:var(--g700);margin-right:8px"><option value="auto">자동</option><option value="manual">직접</option></select><input type="number" id="p1_start" value="65"><span>세</span></div><p class="help" id="p1_start_h">퇴직연도별 60~65세 (2033년 이후 65세)</p></div>
+          <div class="field"><label for="p1_month">예상 월 연금액 (<span class="term" data-g="pv">현재가치</span>)</label><div class="inp"><input type="number" id="p1_month" value="230" step="5"><span>만원/월</span></div><p class="help">공무원연금공단 '예상 퇴직급여' 조회값</p></div>
+          <div class="field"><label for="p1_early"><span class="term" data-g="early">조기 수령 감액</span></label><div class="inp"><select id="p1_early"><option value="0">없음 (정상 수령)</option><option value="1">1년 앞당김 (−5%)</option><option value="2">2년 (−10%)</option><option value="3">3년 (−15%)</option><option value="4">4년 (−20%)</option><option value="5">5년 (−25%)</option></select></div></div>
+          <div class="field"><label for="p1_taxr"><span class="term" data-g="taxr1">과세대상 비율</span></label><div class="inp"><select id="p1_tmode" style="flex:0 0 auto;width:auto;font-size:.92rem;color:var(--g700);margin-right:8px"><option value="auto">자동</option><option value="manual">직접</option></select><input type="number" id="p1_taxr" value="60" step="1"><span>%</span></div><p class="help" id="p1_taxr_h">2002년 이후 기여분 비중</p></div>
+        </div>
+        <div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6f9f" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg><span>공무원연금은 매년 <span class="term" data-g="index">물가연동</span>으로 올라요. 세금은 <span class="term" data-g="compTax">종합과세</span> 방식으로 추정합니다.</span></div>
+      </div>
+      <details class="est"><summary>예상 연금액을 모르면 — 간이 추정하기</summary>
+        <div class="grid" style="margin-top:14px">
+          <div class="field"><label for="e_years">재직 기간</label><div class="inp"><input type="number" id="e_years" value="30"><span>년</span></div><p class="help">최대 36년 인정</p></div>
+          <div class="field"><label for="e_inc">평균 <span class="term" data-g="baseinc">기준소득월액</span></label><div class="inp"><input type="number" id="e_inc" value="520" step="10"><span>만원</span></div></div>
+          <div class="field"><label for="e_rate">연 <span class="term" data-g="payrate">지급률</span></label><div class="inp"><input type="number" id="e_rate" value="1.7" step="0.01"><span>%</span></div><p class="help">2035년까지 1.7%로 단계 인하</p></div>
+        </div>
+        <div class="row" style="margin-top:12px"><span id="e_out" style="font-weight:800;font-size:1.1rem"></span><button class="btn sm" id="e_apply">이 값으로 적용</button></div>
+        <p class="note">월 연금액 ≈ 평균기준소득월액 × 재직기간 × 지급률 (대략치). 공단 조회값 사용을 권장해요.</p>
+      </details>
+      <div class="card" style="margin-top:18px"><div class="fig">
+        <div class="fig-h"><span class="ft">1층 연간 수령액 (세전 · 세후)</span><span class="fu">(단위: 만원/년 · 막대 전체 = 세전)</span></div>
+        <div class="legend"><span><i style="background:var(--c1)"></i>세후 수령액</span><span><i style="background:var(--tax)"></i>세금</span></div>
+        <div class="chartbox"><canvas id="c1pay"></canvas></div></div></div>
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">1층 나이별 <b>월</b> 수령액 (세전 · 세후)</span><span class="fu">(단위: 만원/월 · 막대 전체 = 세전)</span></div>
+        <div class="legend"><span><i style="background:var(--c1)"></i>세후 (한 달에 받는 돈)</span><span><i style="background:var(--tax)"></i>세금</span></div>
+        <div class="chartbox"><canvas id="c1m"></canvas></div></div></div>
+    </div></div></div>
+
+    <!-- PANEL 2 -->
+    <div class="panel" id="panel2" data-t="2"><div class="pin"><div class="pbody">
+      <div class="phead"><h3 style="color:var(--g700)"><span class="chip" style="background:var(--c2)">2층</span>퇴직급여<small>교원 퇴직수당 · 명예퇴직수당 → IRP</small></h3><label class="chk"><input type="checkbox" id="p2_on" checked> 합산에 포함</label></div>
+      <div class="stats" id="k2" style="--n:4"></div>
+      <div class="adv" id="adv2"></div>
+      <div class="tip" style="margin:0 0 18px;background:rgba(255,255,255,.75)"><svg viewBox="0 0 24 24" fill="none" stroke="#138a63" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg><span>교원은 회사원처럼 퇴직연금(DC·DB)이 없어요. 대신 퇴직할 때 <span class="term" data-g="sev">퇴직수당</span>(공단 지급)과, 일찍 그만두면 <span class="term" data-g="hon">명예퇴직수당</span>(교육청 지급)을 <b>한 번에</b> 받아요. 이 돈을 <span class="term" data-g="irp">IRP</span>로 옮기면 연금처럼 나눠 받고 세금도 30~50% 줄일 수 있어요.</span></div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">1</span>퇴직 정보</p>
+        <div class="grid">
+          <div class="field"><label for="t_type">퇴직 방식</label><div class="inp"><select id="t_type"><option value="hon">명예퇴직 (정년 전)</option><option value="reg">정년퇴직 (만 62세)</option></select></div></div>
+          <div class="field" id="t_hon_f"><label for="t_hon">명예퇴직 예정일</label><div class="inp"><select id="t_hon"></select></div><p class="help">교육청 공고 기준 2월 말 · 8월 말</p></div>
+          <div class="field"><label for="t_jage">정년 나이</label><div class="inp"><select id="t_jage"><option value="62">만 62세 (현행 법)</option><option value="63">만 63세 (정년연장 가정)</option><option value="64">만 64세 (정년연장 가정)</option><option value="65">만 65세 (정년연장 가정)</option></select></div><p class="help" id="t_jage_h">교육공무원법 — 임용연도와 관계없이 62세</p></div>
+          <div class="field"><label for="t_bm">생일 달 (정년일 계산)</label><div class="inp"><select id="t_bm"></select></div><p class="help">현재 나이 + 생일 달로 출생연월 추정</p></div>
+          <div class="field"><label for="t_hy">임용 연도 · 월</label><div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px"><div class="inp" style="min-width:0;padding:0 10px"><input type="number" id="t_hy" value="1998"><span>년</span></div><div class="inp" style="min-width:0;padding:0 10px"><input type="number" id="t_hm" value="3" min="1" max="12"><span>월</span></div></div></div>
+          <div class="field"><label for="t_inc">평균 <span class="term" data-g="baseinc">기준소득월액</span></label><div class="inp"><input type="number" id="t_inc" value="520" step="10"><span>만원</span></div><p class="help">퇴직수당 계산용 (공단 조회)</p></div>
+          <div class="field"><label for="t_pay">퇴직 당시 <span class="term" data-g="basepay">본봉</span></label><div class="inp"><input type="number" id="t_pay" value="560" step="10"><span>만원/월</span></div><p class="help">봉급표상 봉급액 (명퇴수당 계산용)</p></div>
+        </div>
+        <div class="callout" id="t_sum"></div>
+      </div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">2</span>퇴직수당 <small>공무원연금공단 · 사학연금공단 지급</small></p>
+        <div class="grid">
+          <div class="field"><label for="s1_calc">금액 정하기</label><div class="inp"><select id="s1_calc"><option value="auto">자동 계산</option><option value="manual">직접 입력</option></select></div></div>
+          <div class="field" id="s1_amt_f"><label for="s1_amt">퇴직수당 (직접 입력)</label><div class="inp"><input type="number" id="s1_amt" value="7000" step="100"><span>만원</span></div></div>
+          <div class="field"><label for="s1_mode">받는 방법</label><div class="inp"><select id="s1_mode"><option value="irp">IRP 이전 → 연금 수령</option><option value="lump">일시금 수령</option></select></div></div>
+        </div>
+        <div class="callout" id="s1_out"></div>
+      </div>
+
+      <div class="card" id="s2_card">
+        <p class="ctitle"><span class="n">3</span>명예퇴직수당 <small>교육청 지급 · 국가공무원 명예퇴직수당 등 지급 규정 별표1</small></p>
+        <div class="grid">
+          <div class="field"><label for="s2_calc">금액 정하기</label><div class="inp"><select id="s2_calc"><option value="auto">자동 계산</option><option value="manual">직접 입력</option></select></div></div>
+          <div class="field" id="s2_amt_f"><label for="s2_amt">명예퇴직수당 (직접 입력)</label><div class="inp"><input type="number" id="s2_amt" value="5000" step="100"><span>만원</span></div></div>
+          <div class="field"><label for="s2_mode">받는 방법</label><div class="inp"><select id="s2_mode"><option value="irp">IRP 이전 → 연금 수령</option><option value="lump">일시금 수령</option></select></div></div>
+        </div>
+        <div class="callout" id="s2_out"></div>
+      </div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">4</span><span class="term" data-g="sevtax">퇴직소득세</span> <small>소득세법 제48조 · 제55조</small></p>
+        <div class="grid" style="margin-bottom:12px">
+          <div class="field"><label for="p2_taxmode">세율 정하기</label><div class="inp"><select id="p2_taxmode"><option value="auto">자동 계산</option><option value="manual">직접 입력 (원천징수영수증)</option></select></div></div>
+          <div class="field" id="p2_tax_f"><label for="p2_tax"><span class="term" data-g="eff">실효세율</span></label><div class="inp"><input type="number" id="p2_tax" value="3" step="0.1"><span>%</span></div></div>
+        </div>
+        <div class="tbl-wrap" style="max-height:none"><table id="t_tax"></table></div>
+        <p class="fig-src" id="t_tax_note"></p>
+      </div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">5</span>IRP 연금 수령 설정</p>
+        <div class="grid">
+          <div class="field"><label for="p2_bal">기존 IRP 퇴직금 적립금</label><div class="inp"><input type="number" id="p2_bal" value="0" step="100"><span>만원</span></div><p class="help">이전 직장 퇴직금 등. 없으면 0</p></div>
+          <div class="field"><label for="p2_r">운용 <span class="term" data-g="ret">수익률</span></label><div class="inp"><input type="number" id="p2_r" value="3.5" step="0.1"><span>% / 년</span></div></div>
+          <div class="field"><label for="p2_start">연금 <span class="term" data-g="startage">개시 나이</span></label><div class="inp"><input type="number" id="p2_start" value="57"><span>세</span></div><p class="help">55세 이상 · 퇴직 후</p></div>
+          <div class="field"><label for="p2_years">수령 기간</label><div class="inp"><input type="number" id="p2_years" value="10"><span>년</span></div><p class="help">10년 이상이면 세금 감면이 커요</p></div>
+        </div>
+        <div class="row" style="margin-top:14px"><button class="btn" id="gapFit">↔ <span>연금 <span class="term" data-g="gap">공백기</span>에 맞추기</span></button><span class="note" id="gapNote"></span></div>
+      </div>
+
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">2층 연간 수령액 (세전 · 세후)</span><span class="fu">(단위: 만원/년 · 막대 전체 = 세전)</span></div>
+        <div class="legend"><span><i style="background:var(--c2)"></i>세후 수령액</span><span><i style="background:var(--tax)"></i>세금</span></div>
+        <div class="chartbox"><canvas id="c2pay"></canvas></div></div></div>
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">2층 나이별 <b>월</b> 수령액 (세전 · 세후)</span><span class="fu">(단위: 만원/월 · 막대 전체 = 세전)</span></div>
+        <div class="legend"><span><i style="background:var(--c2)"></i>세후 (한 달에 받는 돈)</span><span><i style="background:var(--tax)"></i>세금</span></div>
+        <div class="chartbox"><canvas id="c2m"></canvas></div></div></div>
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">2층 연도별 세금 내역</span><span class="fu">(단위: 만원)</span></div>
+        <div class="tbl-wrap"><table id="t2"></table></div>
+        <p class="fig-src">퇴직소득(원금)을 먼저 꺼내고, 다 꺼낸 뒤 운용수익을 꺼내는 순서로 계산합니다. 1년에 꺼낸 돈 중 연금수령한도까지가 연금으로 인정돼요.</p></div></div>
+    </div></div></div>
+
+    <!-- PANEL 3 -->
+    <div class="panel" id="panel3" data-t="3"><div class="pin"><div class="pbody">
+      <div class="phead"><h3 style="color:var(--c3d)"><span class="chip" style="background:var(--c3);color:#1f2a08">3층</span>개인연금<small><span class="term" data-g="savings">연금저축</span> · IRP 개인납입분</small></h3><label class="chk"><input type="checkbox" id="p3_on" checked> 합산에 포함</label></div>
+
+      <div class="stats" id="k3" style="--n:5"></div>
+      <div class="adv" id="adv3"></div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">1</span>지금부터 개시 전까지 (적립)</p>
+        <div class="grid">
+          <div class="field"><label for="p3_bal">현재 <span class="term" data-g="eval">평가금액</span></label><div class="inp"><input type="number" id="p3_bal" value="10000" step="100"><span>만원</span></div></div>
+          <div class="field"><label for="p3_contrib">매년 납입액</label><div class="inp"><input type="number" id="p3_contrib" value="1200" step="50"><span>만원/년</span></div><p class="help"><span class="term" data-g="credit">세액공제</span> 한도: 연 900만원</p></div>
+          <div class="field"><label for="p3_cend">납입 종료 나이</label><div class="inp"><input type="number" id="p3_cend" value="60"><span>세</span></div><p class="help" id="p3_cend_w">개시 나이 전까지만 납입돼요</p></div>
+          <div class="field"><label for="p3_r">적립 기간 <span class="term" data-g="ret">수익률</span></label><div class="inp"><input type="number" id="p3_r" value="5" step="0.1"><span>% / 년</span></div></div>
+          <div class="field"><label for="p3_start">연금 <span class="term" data-g="startage">개시 나이</span></label><div class="inp"><input type="number" id="p3_start" value="60"><span>세</span></div><p class="help" id="p3_start_w">55세 이상, 가입 5년 이상</p></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">＋</span>수령 중 추가 납입 <small>별도 계좌 (새 연금저축 · IRP)</small></p>
+        <label class="chk"><input type="checkbox" id="x_on"> 연금을 받는 동안 새 계좌에 계속 저축하기</label>
+        <p class="note" style="margin:8px 0 0">연금을 받기 시작한 계좌에는 보통 추가 납입이 어려워서, <b>새 계좌</b>를 만들어 모은 뒤 나중에 따로 받는 방식으로 계산해요.</p>
+        <div id="x_box" style="display:none;margin-top:16px">
+          <div class="grid">
+            <div class="field"><label for="x_from">납입 시작 나이</label><div class="inp"><input type="number" id="x_from" value="60"><span>세</span></div></div>
+            <div class="field"><label for="x_to">납입 종료 나이</label><div class="inp"><input type="number" id="x_to" value="64"><span>세</span></div></div>
+            <div class="field"><label for="x_amt">매년 납입액</label><div class="inp"><input type="number" id="x_amt" value="600" step="50"><span>만원/년</span></div></div>
+            <div class="field"><label for="x_r">운용 <span class="term" data-g="ret">수익률</span></label><div class="inp"><input type="number" id="x_r" value="4" step="0.1"><span>% / 년</span></div></div>
+            <div class="field"><label for="x_start">이 계좌 연금 개시 나이</label><div class="inp"><input type="number" id="x_start" value="65"><span>세</span></div><p class="help" id="x_start_w">가입 후 5년이 지나야 연금으로 받을 수 있어요</p></div>
+            <div class="field"><label for="x_years">수령 기간</label><div class="inp"><input type="number" id="x_years" value="10"><span>년</span></div><p class="help">기간분할식 (매달 남은 돈 ÷ 남은 횟수)</p></div>
+            <div class="field"><label for="x_credit"><span class="term" data-g="credit">세액공제</span> 받나요?</label><div class="inp"><select id="x_credit"><option value="yes">받음 (원금+수익에 과세)</option><option value="no">안 받음 (수익에만 과세)</option></select></div><p class="help">종합소득세를 내야 공제받을 수 있어요</p></div>
+          </div>
+          <div class="callout" id="x_out"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">2</span>수령을 시작한 이후 수익률</p>
+        <div class="row" style="margin-bottom:14px"><div class="seg" id="seg_rate"><button data-v="keep" class="on">그대로 유지</button><button data-v="change">수익률 변경</button></div></div>
+        <div class="grid" id="rate_change_box" style="display:none">
+          <div class="field"><label for="p3_chage">변경 시작 나이</label><div class="inp"><input type="number" id="p3_chage" value="60"><span>세</span></div></div>
+          <div class="field"><label for="p3_rnew">변경 후 수익률</label><div class="inp"><input type="number" id="p3_rnew" value="3" step="0.1"><span>% / 년</span></div><p class="help">예) 안정형 상품으로 전환</p></div>
+        </div>
+        <p class="note" id="rate_note" style="margin:0">수령 중에도 적립 기간 수익률(<b id="rate_keep_txt">5%</b>)로 계속 운용된다고 가정합니다.</p>
+        <div class="callout warn" id="rate_cmp" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">3</span>수령 방식 <small>기본: 한도분할식 (증권사 표준)</small></p>
+        <div class="methods" id="methods"></div>
+        <div class="mparams" id="mparams">
+          <div data-m="limit"><div class="callout" id="ratio_out" style="margin:0 0 14px"></div><div class="grid">
+            <div class="field"><label for="m_ratio">한도 대비 수령 비율</label><div class="inp"><input type="number" id="m_ratio" value="100" step="5" min="1" max="100"><span>%</span></div><p class="help">100% = 한도 전액 (10년차에 모두 받음)</p></div>
+            <div class="field"><label for="m_lend">11년차 이후 수령 종료 나이</label><div class="inp"><input type="number" id="m_lend" value="90"><span>세</span></div><p class="help">비율을 낮춰 돈이 남을 때 나눠 받기</p></div>
+          </div></div>
+          <div data-m="fixed"><div class="grid">
+            <div class="field"><label for="m_fixed">원하는 월 수령액</label><div class="inp"><input type="number" id="m_fixed" value="200" step="10"><span>만원/월</span></div></div>
+            <div class="field"><label for="m_fixbase">금액 기준 (<span class="term" data-g="prepost">세전/세후</span>)</label><div class="inp"><select id="m_fixbase"><option value="pre">세전 금액</option><option value="post">세후 금액</option></select></div></div>
+            <div class="field"><label>&nbsp;</label><label class="chk" style="height:54px"><input type="checkbox" id="m_fixidx"> 매년 물가만큼 증액</label></div>
+          </div><div class="callout" id="fix_out"></div></div>
+          <div data-m="period"><div class="grid"><div class="field"><label for="m_pyears">수령 기간</label><div class="inp"><input type="number" id="m_pyears" value="20"><span>년</span></div><p class="help">매달: 남은 돈 ÷ 남은 개월 수</p></div></div></div>
+          <div data-m="yearly"><div class="grid"><div class="field"><label for="m_yyears">수령 기간 (N)</label><div class="inp"><input type="number" id="m_yyears" value="20"><span>년</span></div><p class="help">매년 1월 1일 잔액 ÷ 남은 연수</p></div></div></div>
+          <div data-m="free">
+            <div class="grid"><div class="field"><label for="m_free">기본 연간 인출액</label><div class="inp"><input type="number" id="m_free" value="1200" step="50"><span>만원/년</span></div></div></div>
+            <p style="font-weight:700;margin:14px 0 8px">특정 나이에 다른 금액 인출</p>
+            <div id="ovr_list"></div><button class="btn sm" id="ovr_add">+ 나이 추가</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="ctitle"><span class="n">4</span>세금 — 연 1,500만원 초과 시 과세 방법</p>
+        <div class="row" style="margin-bottom:14px"><div class="seg" id="seg_tax"><button data-v="sep" class="on">분리과세 16.5%</button><button data-v="comp">종합소득세 합산</button><button data-v="auto">유리한 쪽 자동</button></div></div>
+        <div class="grid" style="margin-bottom:12px">
+          <div class="field"><label for="p3_taxr"><span class="term" data-g="taxr3">과세대상 비율</span></label><div class="inp"><input type="number" id="p3_taxr" value="100" step="5"><span>%</span></div></div>
+          <div class="field"><label for="p3_k0"><span class="term" data-g="year">연금수령연차</span> 시작</label><div class="inp"><select id="p3_k0"><option value="1">1년차 (2013.3 이후 가입)</option><option value="6">6년차 (2013.3 이전 가입)</option></select></div></div>
+        </div>
+        <p class="note" style="margin:0">• 연 <b>1,500만원 이하</b>: <span class="term" data-g="ptax">연금소득세</span> — 55~69세 <b>5.5%</b> · 70~79세 <b>4.4%</b> · 80세 이상 <b>3.3%</b><br>
+        • 연 <b>1,500만원 초과</b>: 전액에 <b><span class="term" data-g="sep">분리과세</span> 16.5%</b>(기본 가정) 또는 <b><span class="term" data-g="compTax">종합소득세 합산</span></b> 중 <b>선택 가능</b><br>
+        • <span class="term" data-g="limit">연금수령한도</span>를 넘겨 꺼낸 돈은 <span class="term" data-g="outside">연금외수령</span>으로 <b><span class="term" data-g="etc">기타소득세</span> 16.5%</b></p>
+      </div>
+
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">3층 연간 수령액 (세전 · 세후)</span><span class="fu">(단위: 만원/년 · 막대 전체 = 세전)</span></div>
+        <div class="legend"><span><i style="background:var(--c3)"></i>세후 수령액</span><span><i style="background:var(--tax)"></i>세금</span></div>
+        <div class="chartbox"><canvas id="c3pay"></canvas></div></div></div>
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">3층 나이별 <b>월</b> 수령액 (세전 · 세후)</span><span class="fu">(단위: 만원/월 · 막대 전체 = 세전)</span></div>
+        <div class="legend"><span><i style="background:var(--c3)"></i>세후 (한 달에 받는 돈)</span><span><i style="background:var(--tax)"></i>세금</span></div>
+        <div class="chartbox"><canvas id="c3m"></canvas></div></div></div>
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">연초 <span class="term" data-g="eval">평가금액</span> 추이</span><span class="fu">(단위: 만원)</span></div>
+        <div class="legend" id="balLegend"></div>
+        <div class="chartbox"><canvas id="c3bal"></canvas></div></div></div>
+
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">3층 연도별 수령액 · 세금</span><span class="fu">(단위: 만원 · 초록 음영 = 세후)</span></div>
+        <div class="tbl-wrap"><table id="t3"></table></div>
+        <p class="fig-src">매달 초 지급, 월 단위로 수익 반영.</p></div></div>
+
+      <div class="card"><div class="fig">
+        <div class="fig-h"><span class="ft">수령 방식별 비교</span><span class="fu">(같은 적립금·조건, 단위: 만원)</span></div>
+        <div class="tbl-wrap" style="max-height:none"><table id="tcmp"></table></div></div></div>
+    </div></div></div>
+    <div class="next" style="margin-top:18px"><a class="btn solid" href="#total">다음: 합산 결과 보기 →</a></div>
+  </section>
+
+  <!-- ============ VIEW: TOTAL ============ -->
+  <section class="view" id="v-total">
+    <div class="vhead"><div class="eyebrow">STEP 3</div><h2>1 · 2 · 3층 합산</h2><p>나이별로 세 층에서 받는 돈을 쌓아서 봅니다.</p></div>
+    <div class="stats" id="kAll" style="--n:5"></div>
+    <div class="sumline" id="sumline"></div>
+    <div class="adv" id="advT"></div>
+    <div class="card">
+      <div class="toolbar">
+        <div class="seg" id="seg_real"><button data-v="nom" class="on">명목 금액</button><button data-v="real">현재가치</button></div>
+        <label class="chk"><input type="checkbox" id="c_lump"> <span class="term" data-g="lump">일시금</span> 포함</label>
+      </div>
+      <div class="fig">
+        <div class="fig-h"><span class="ft" id="cAllTitle">나이별 연금 수령액 (누적)</span><span class="fu" id="cAllUnit"></span></div>
+        <div class="legend"><span><i style="background:var(--c1)"></i>1층 세후</span><span><i style="background:var(--c2)"></i>2층 세후</span><span><i style="background:var(--c3)"></i>3층 세후</span><span id="lgLump" style="display:none"><i style="background:#8d9a93"></i>일시금 세후</span><span><i style="background:repeating-linear-gradient(135deg,#b4bdb8 0 3px,#d9dfdb 3px 6px)"></i>세금</span><span><i class="dash"></i>목표 생활비</span></div>
+        <p class="note" style="margin:-2px 0 8px">색 막대 = <b>세후</b>(실제 받는 돈) · 회색 빗금까지 포함한 막대 전체 = <b>세전</b></p>
+        <div class="chartbox tall"><canvas id="cAll"></canvas></div>
+      </div>
+      <div class="fig" style="margin-top:22px">
+        <div class="fig-h"><span class="ft">나이별 <b>월</b> 연금 수령액 (누적)</span><span class="fu" id="cAllMUnit"></span></div>
+        <div class="legend"><span><i style="background:var(--c1)"></i>1층 세후</span><span><i style="background:var(--c2)"></i>2층 세후</span><span><i style="background:var(--c3)"></i>3층 세후</span><span class="lgLumpX" style="display:none"><i style="background:#8d9a93"></i>일시금 세후</span><span><i style="background:repeating-linear-gradient(135deg,#b4bdb8 0 3px,#d9dfdb 3px 6px)"></i>세금</span><span><i class="dash"></i>목표 생활비</span></div>
+        <div class="chartbox tall"><canvas id="cAllM"></canvas></div>
+      </div>
+    </div>
+    <div class="card"><div class="fig">
+      <div class="fig-h"><span class="ft">나이별 연간 · 월간 수령액</span><span class="fu" id="tAllUnit"></span></div>
+      <div class="tbl-wrap"><table id="tAll"></table></div>
+      <p class="fig-src">굵은 줄 = 5세 단위 · 세금은 층별 추정치 합계 · 일시금은 별도 열</p></div></div>
+  </section>
+
+  <!-- ============ VIEW: GUIDE ============ -->
+  <section class="view" id="v-guide">
+    <div class="vhead"><div class="eyebrow">HELP</div><h2>용어 사전 · 계산 가정</h2><p>어려운 단어를 쉬운 말로 풀었어요.</p></div>
+    <div class="card">
+      <div class="row" style="margin-bottom:16px"><div class="inp" style="flex:1;max-width:420px"><input id="glSearch" placeholder="찾을 단어 입력 (예: 분리과세)" style="text-align:left"></div></div>
+      <div class="gl" id="glList"></div>
+    </div>
+    <div class="card">
+      <p class="ctitle">계산 가정과 유의사항</p>
+      <p class="note" style="margin:0">• 수익률·물가는 매년 일정하다고 가정한 추정치이며 실제 결과와 다를 수 있습니다. 투자·세무 판단은 금융회사·세무 전문가와 상의하세요.<br>
+      • 종합과세 추정: 연금소득공제(최대 900만원)와 본인 기본공제 150만원 후 종합소득세율(6~45%)에 지방소득세 10%를 더해 계산. 다른 공제는 반영하지 않습니다.<br>
+      • 3층의 1,500만원 기준은 과세대상(세액공제 받은 납입금+운용수익) 기준이며, 퇴직소득 재원과 공적연금은 제외합니다.<br>
+      • 한도분할식 연금수령한도 = 연초 평가액 ÷ (11 − 연금수령연차) × 120%, 11년차부터는 한도 없음.<br>
+      • 공무원연금의 소득에 따른 지급정지, 유족연금 등은 반영하지 않습니다.<br>
+      • 교원 명예퇴직: 재직 20년 이상·정년퇴직일까지 1년 이상 남은 경우 신청. 수당 = 본봉×68%×½×정년잔여월수(5년 이내), 5~10년은 60+(잔여월수−60)÷2개월, 10년 초과분은 미지급 (국가공무원 명예퇴직수당 등 지급 규정 별표1). 정년은 만 62세가 되는 학기 말(8월 말 또는 2월 말).<br>
+      • 퇴직수당: 재직연수(최대 36년) × 평균 기준소득월액 × 지급비율(6.5~39%, 공무원연금법 시행령 제58조). 2009년 이전 임용자의 구간별 계산은 단순화했습니다. 퇴직소득세는 2002년 이후 재직분에만 부과되며, 명예퇴직수당은 전액 과세됩니다.<br>
+      • 퇴직소득세: 근속연수공제 → 환산급여 → 환산급여공제 → 기본세율 → ×근속연수÷12 (소득세법 제48조·제55조), 지방소득세 10% 포함. 같은 해 받은 퇴직수당과 명예퇴직수당을 합산합니다.<br>
+      • IRP 연금 수령: 퇴직소득을 먼저 꺼내는 것으로 계산합니다. 연금수령한도 안의 금액은 이연퇴직소득세의 70%(11~20년차 60%, 21년차부터 50%), 한도를 넘는 금액은 100%를 냅니다. 운용수익은 한도 안이면 연금소득세(3.3~5.5%), 한도를 넘으면 기타소득세 16.5%입니다. 2층 운용수익은 3층의 1,500만원 판정에 합산하지 않았습니다.<br>
+      • 교원 정년은 교육공무원법상 만 62세로 임용연도와 무관합니다. 정년연장(63~65세)은 2026년 현재 국회 논의 단계라 '정년 나이'에서 가정으로만 고를 수 있습니다.<br>
+      • 공무원연금 개시 나이(1996년 이후 임용): 퇴직연도 2022~23년 61세, 2024~26년 62세, 2027~29년 63세, 2030~32년 64세, 2033년 이후 65세.<br>
+      • 실제 지급액과 세금은 공무원연금공단(1588-4321)·시도교육청 공고·원천징수영수증으로 확인하세요.<br>
+      • 입력값은 이 브라우저에만 저장됩니다.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const val=id=>{const x=parseFloat($(id).value);return isNaN(x)?0:x;};
+const f0=x=>Math.round(x).toLocaleString('ko-KR');
+function man(x){x=Math.round(x);if(Math.abs(x)>=10000){const e=Math.trunc(x/10000),r=Math.abs(x%10000);return e+'억'+(r?' '+f0(r)+'만':'')+'원';}return f0(x)+'만원';}
+function manK(x){x=Math.round(x);return Math.abs(x)>=10000?(Math.round(x/1000)/10).toLocaleString('ko-KR')+'<small>억원</small>':f0(x)+'<small>만원</small>';}
+function manS(x){x=Math.round(x);if(Math.abs(x)>=10000){return (Math.round(x/1000)/10)+'억';}return f0(x);}
+const mr=r=>Math.pow(1+r/100,1/12)-1;
+const C1='#2f6f9f',C2='#1e9b6e',C3='#a5c23a',CT='#b4bdb8',CL='#8d9a93';
+
+/* ---------- glossary ---------- */
+const GL={
+ life:['기대수명','이 계산을 몇 살까지 할지 정하는 나이예요. 오래 사는 경우를 대비해 넉넉하게 잡을수록 안전합니다.','예) 90세로 정하면 90세까지 매년 받는 돈을 계산해요.'],
+ inf:['물가상승률','물건값이 1년에 평균 몇 % 오르는지를 말해요.','예) 2.5%면 올해 1만원짜리 물건이 내년엔 10,250원이 돼요.'],
+ pv:['현재가치','미래에 받을 돈을 "오늘 물가로 치면 얼마어치인지"로 바꾼 금액이에요. 물가가 오르면 같은 100만원으로 살 수 있는 게 줄어들거든요.','예) 물가가 매년 2.5% 오르면 20년 뒤의 100만원은 지금 돈으로 약 61만원어치예요.'],
+ target:['목표 생활비','은퇴 후 한 달 생활에 필요하다고 생각하는 돈이에요. 오늘 물가 기준으로 적으면 계산기가 미래 물가에 맞춰 늘려 줘요.','예) 지금 기준 월 300만원이면 20년 뒤엔 약 490만원이 필요해요.'],
+ comp_inc:['종합소득','1년 동안 번 여러 종류의 돈(이자·배당·사업·월급·연금·기타)을 한데 모은 것이에요. 많이 벌수록 세율이 높아져요.','이 칸에는 연금 말고 다른 소득(예: 월세 수입)을 적어요.'],
+ taxbase:['과세표준','세금을 매기는 기준 금액이에요. 번 돈에서 빼 주는 금액(공제)을 뺀 뒤 남은 돈이에요.','예) 1,000만원 벌고 공제가 300만원이면 과세표준은 700만원.'],
+ public:['공적연금','나라가 운영하는 연금이에요. 공무원연금·국민연금·사학연금·군인연금이 있어요. 평생 받고, 매년 물가만큼 올라요.',''],
+ startage:['개시 나이','연금을 처음 받기 시작하는 나이예요.','개인연금·퇴직연금은 55세 이상부터 연금으로 받을 수 있어요.'],
+ early:['조기 수령 감액','정해진 나이보다 일찍 연금을 받으면 1년 당길 때마다 5%씩 줄여서 주는 제도예요. 줄어든 금액은 평생 그대로예요.','예) 2년 일찍 받으면 평생 10% 적게 받아요.'],
+ taxr1:['과세대상 비율 (1층)','공무원연금 중 세금을 내야 하는 부분의 비율이에요. 2001년까지 낸 돈에서 나오는 연금은 세금이 없고, 2002년 이후 낸 부분에만 세금이 붙어요.','자동으로 두면 2층의 임용 연월·퇴직일로 "2002년 이후 재직 기간 ÷ 전체 재직 기간"을 계산해 넣어요. 공단은 낸 기여금 금액 기준으로 계산할 수 있어 조금 다를 수 있어요.'],
+ index:['물가연동','물가가 오른 만큼 연금도 매년 올려 주는 것이에요. 그래서 연금의 "실제 가치"가 줄지 않아요.',''],
+ baseinc:['기준소득월액','공무원연금을 계산할 때 쓰는 "한 달 월급" 기준 금액이에요. 수당을 포함한 1년 소득을 12로 나눈 값이에요.',''],
+ payrate:['지급률','1년 일할 때마다 기준소득의 몇 %를 연금으로 주는지 정한 비율이에요.','예) 1.7%로 30년 일하면 기준소득의 51%를 매달 받아요.'],
+ dc:['DC형 퇴직연금','회사가 매년 퇴직금을 내 계좌에 넣어 주고, 그 돈을 굴리는 건 내가 정하는 방식이에요. 굴린 결과에 따라 받을 돈이 달라져요.',''],
+ irp:['IRP (개인형 퇴직연금)','내 이름으로 만드는 퇴직연금 통장이에요. 퇴직금을 옮겨 두거나 스스로 저축할 수 있고, 넣은 돈은 세금 혜택(세액공제)도 받아요.',''],
+ sevtax:['퇴직소득세','퇴직금에 붙는 세금이에요. 한 번에 받지 않고 연금으로 나눠 받으면 30~50%를 깎아 줘요.',''],
+ eff:['실효세율','실제로 낸 세금을 전체 금액으로 나눈 비율이에요.','예) 퇴직금 1억원에 세금 300만원이면 실효세율 3%. 퇴직소득 원천징수영수증에서 확인할 수 있어요.'],
+ sev:['퇴직수당','교원·공무원이 퇴직할 때 공무원연금공단(사립은 사학연금공단)에서 한 번에 받는 돈이에요. 회사원의 퇴직금과 비슷해요.','재직연수 × 평균 기준소득월액 × 지급비율(20년 이상 39%)'],
+ hon:['명예퇴직수당','20년 이상 근무한 교원이 정년보다 1년 이상 일찍 스스로 퇴직하면 교육청이 추가로 주는 돈이에요.','정년까지 남은 기간이 길수록 많아요(잔여 5년까지는 남은 달 수 × 본봉의 절반). 매년 교육청 공고로 신청해요.'],
+ lump:['일시금','나눠 받지 않고 한 번에 다 받는 돈이에요.','그래프에 넣으면 그 해만 막대가 매우 커져서 기본은 빼 두었어요.'],
+ savings:['연금저축','노후를 위해 스스로 모으는 연금 통장이에요. 넣은 돈에 세금 혜택이 있고, 55세 이후 연금으로 꺼내 써요.',''],
+ credit:['세액공제','내야 할 세금에서 바로 빼 주는 혜택이에요. 연금저축·IRP에 넣은 돈의 13.2~16.5%를 연말정산 때 돌려받아요(연 900만원까지).','대신 나중에 연금으로 받을 때 이 부분에 연금소득세를 내요.'],
+ eval:['평가금액','지금 계좌에 든 돈(원금+수익)을 오늘 가격으로 계산한 금액이에요.',''],
+ ret:['수익률','돈이 1년에 몇 % 불어나는지예요.','예) 5%면 1억원이 1년 뒤 1억 500만원이 돼요.'],
+ limit:['연금수령한도','세금 혜택을 받으며 1년에 꺼낼 수 있는 최대 금액이에요. 이걸 넘겨 꺼내면 세금이 16.5%로 확 올라가요. 11년차부터는 한도가 없어요.','계산식: 연초 잔액 ÷ (11 − 연금수령연차) × 1.2'],
+ year:['연금수령연차','연금을 받기 시작한 지 몇 번째 해인지예요. 첫해가 1년차예요. 2013년 3월 이전에 가입했다면 6년차부터 시작해서 한도가 더 넉넉해요.',''],
+ m_limit:['한도분할식','매년 계산되는 연금수령한도만큼 받는 방식이에요. 증권사의 기본 방식이에요. 한도를 100% 다 받으면 10년이면 다 받게 돼요.',''],
+ m_fixed:['정액식','"매달 ○○만원"처럼 받을 금액을 정하는 방식이에요. 돈이 언제 바닥나는지는 수익률에 따라 달라져요.',''],
+ m_period:['기간분할식','"○○년 동안"처럼 받을 기간을 정하는 방식이에요. 매달 "남은 돈 ÷ 남은 횟수"를 받아서 금액이 조금씩 바뀌어요.','기간분할식(연금금액 변동)과 같은 방식이에요.'],
+ m_yearly:['한도분할식 (연간금액 일정)','매년 1월 1일 잔액을 남은 해 수로 나눠서 그 해 1년 동안은 매달 같은 금액을 받는 방식이에요.',''],
+ m_free:['임의식','필요할 때 원하는 만큼 꺼내는 방식이에요. 정해진 규칙이 없어요.',''],
+ ptax:['연금소득세','연금을 받을 때 내는 세금이에요. 나이가 많을수록 낮아져요(5.5% → 4.4% → 3.3%).',''],
+ sep:['분리과세','다른 소득과 섞지 않고, 그 돈에만 정해진 세율로 세금을 매기고 끝내는 방식이에요.','예) 연금 2,000만원 × 16.5% = 330만원 내고 끝.'],
+ compTax:['종합과세 (종합소득세 합산)','연금을 다른 소득과 모두 더해서 세금을 계산하는 방식이에요. 다른 소득이 적으면 분리과세보다 세금이 적을 수도 있어요.','"유리한 쪽 자동"을 누르면 둘 중 세금이 적은 쪽으로 계산해요.'],
+ etc:['기타소득세','연금 한도를 넘겨 꺼내거나 중간에 해지할 때 붙는 16.5% 세금이에요.',''],
+ outside:['연금외수령','연금 규칙(한도·기간)을 지키지 않고 꺼내는 것이에요. 한도 초과 인출, 중도 해지 등이 해당돼요.',''],
+ prepost:['세전 / 세후','세전은 세금 내기 전 금액, 세후는 세금을 내고 실제로 손에 쥐는 금액이에요.',''],
+ nominal:['명목 금액','미래에 실제 통장에 찍히는 숫자 그대로의 금액이에요. 물가 상승을 빼지 않은 값이에요.',''],
+ taxr3:['과세대상 비율 (3층)','연금저축·IRP 돈 중 세금을 내야 하는 부분의 비율이에요. 세액공제를 받은 원금과 그동안 불어난 수익이 여기에 해당해요. 공제를 안 받은 원금은 세금 없이 돌려받아요.',''],
+ deplete:['소진 나이','계좌의 돈이 다 떨어지는 나이예요.',''],
+ pri:['사학연금','사립학교 교직원이 가입하는 공적연금이에요. 공무원연금과 내는 돈·받는 규칙이 거의 같아요.',''],
+ basepay:['기준봉급월액','수당을 뺀 한 달 기본 월급(본봉)이에요. 명예퇴직수당을 계산할 때 써요.','급여명세서의 "본봉" 금액을 보면 돼요.'],
+ retage:['정년','일을 그만둬야 하는 정해진 나이예요. 교원은 교육공무원법에 따라 만 62세이고, 임용연도와 관계없이 같아요. 62세가 되는 날이 3~8월이면 8월 31일, 9~2월이면 2월 말에 퇴직해요.','임용연도(1996년 전후)에 따라 달라지는 건 정년이 아니라 공무원연금을 받기 시작하는 나이예요. 정년을 65세로 늘리자는 논의는 있지만 2026년 현재 법으로 정해지지 않았어요.'],
+ gap:['연금 공백기 (소득 크레바스)','퇴직해서 월급은 끊겼는데 공무원연금은 아직 안 나오는 기간이에요. 예) 62세 퇴직, 65세 연금 시작이면 3년 공백.','이 기간을 IRP에 넣어 둔 퇴직수당으로 메우면 생활비 걱정이 줄어요. 다만 10년보다 짧게 받으면 한도를 넘는 부분은 세금 감면이 없어요.'],
+ sevrate:['퇴직수당 지급비율','재직 기간에 따라 정해진 비율이에요. 1~4년 6.5%, 5~9년 22.75%, 10~14년 29.25%, 15~19년 32.5%, 20년 이상 39%.','퇴직수당 ≈ 재직연수 × 평균 기준소득월액 × 지급비율'],
+ inherit:['상속되는 연금계좌','기대수명 전에 돌아가시면 연금저축·IRP에 남은 돈은 가족에게 상속돼요. 배우자는 계좌를 그대로 이어받아 연금으로 계속 받을 수 있고, 다른 가족은 해지해서 받아요. 사망은 부득이한 사유라 세금이 3.3~5.5%(퇴직금은 퇴직소득세의 70%)로 낮아요.','남은 돈은 다른 재산과 합쳐 상속세 계산에 들어가요. 배우자+자녀가 있으면 보통 10억원 정도까지는 상속세가 없어요.'],
+ t1500:['1,500만원 기준','연금저축·IRP에서 1년에 받는 돈(세금 대상 부분)이 1,500만원을 넘으면, 낮은 연금소득세 대신 16.5% 분리과세나 종합과세 중 하나를 골라야 해요.','퇴직금에서 나오는 연금과 공무원연금은 이 1,500만원에 포함되지 않아요.']
+};
+const term=(k,t)=>`<span class="term" data-g="${k}">${t}</span>`;
+const pop=$('pop');let popFor=null;
+function showPop(el){const g=GL[el.dataset.g];if(!g)return;
+  if(popFor===el&&pop.classList.contains('on')){hidePop();return;}
+  popFor=el;$('popT').textContent=g[0];$('popD').textContent=g[1];$('popE').textContent=g[2]||'';$('popE').style.display=g[2]?'':'none';
+  pop.classList.add('on');const r=el.getBoundingClientRect();const pw=pop.offsetWidth,ph=pop.offsetHeight;
+  let x=Math.min(Math.max(12,r.left),innerWidth-pw-12);let y=r.bottom+10;if(y+ph>innerHeight-12)y=Math.max(12,r.top-ph-10);
+  pop.style.left=x+'px';pop.style.top=y+'px';}
+function hidePop(){pop.classList.remove('on');popFor=null;}
+document.addEventListener('click',e=>{const t=e.target.closest('.term');
+  if(t){e.preventDefault();e.stopPropagation();showPop(t);return;}
+  if(!e.target.closest('#pop'))hidePop();},true);
+$('popX').onclick=hidePop;addEventListener('scroll',hidePop,{passive:true});addEventListener('keydown',e=>{if(e.key==='Escape')hidePop();});
+$('glCount').textContent=Object.keys(GL).length;
+function renderGL(q){q=(q||'').trim();const hl=s=>q?s.split(q).join('<mark>'+q+'</mark>'):s;
+  $('glList').innerHTML=Object.values(GL).filter(g=>!q||g[0].includes(q)||g[1].includes(q)).sort((a,b)=>a[0].localeCompare(b[0],'ko'))
+   .map(g=>`<div><b>${hl(g[0])}</b><p>${hl(g[1])}</p>${g[2]?`<p class="ex">${g[2]}</p>`:''}</div>`).join('')||'<p class="note">찾는 단어가 없어요.</p>';}
+$('glSearch').oninput=e=>renderGL(e.target.value);
+$('navSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){$('glSearch').value=e.target.value;renderGL(e.target.value);location.hash='guide';}});
+$('navSearch').addEventListener('input',e=>{if(location.hash!=='#guide')return;$('glSearch').value=e.target.value;renderGL(e.target.value);});
+renderGL('');
+
+/* ---------- state ---------- */
+const st={rate:'keep',tax:'sep',method:'limit',unit:'m',net:'gross',real:'nom',open:3,ovr:[{age:65,amt:3000}]};
+
+/* ---------- tax ---------- */
+function pDeduct(x){if(x<=350)return x;if(x<=700)return 350+(x-350)*.4;if(x<=1400)return 490+(x-700)*.2;return Math.min(900,630+(x-1400)*.1);}
+function incTax(b){b=Math.max(0,b);const B=[[1400,.06,0],[5000,.15,126],[8800,.24,576],[15000,.35,1544],[30000,.38,1994],[50000,.40,2594],[100000,.42,3594],[Infinity,.45,6594]];for(const [lim,r,d] of B){if(b<=lim)return (b*r-d)*1.1;}return 0;}
+function pubInc(gp){return Math.max(0,gp-pDeduct(gp));}
+function baseTax(other,pension){return incTax(other+pubInc(pension)-150);}
+const lowRate=a=>a<70?.055:(a<80?.044:.033);
+
+/* ---------- 1층 ---------- */
+function calc1(g){
+  const on=$('p1_on').checked,m=val('p1_month'),early=+$('p1_early').value;let start=val('p1_start'),tr=val('p1_taxr')/100;
+  if($('p1_smode').value==='auto'||$('p1_tmode').value==='auto'){const T=teacher(g);
+    if($('p1_smode').value==='auto')start=T.pubStart-early;
+    if($('p1_tmode').value==='auto')tr=Math.round(T.ratio02*100)/100;}
+  const rows={};
+  for(let a=g.cur;a<=g.end;a++){let gross=0;if(a>=start)gross=m*12*Math.pow(1+g.inf/100,a-g.cur)*(1-0.05*early);
+    const taxable=gross*tr;const tax=gross>0?Math.max(0,baseTax(g.other,taxable)-baseTax(g.other,0)):0;rows[a]={gross,taxable,tax};}
+  return {on,start,rows};
+}
+/* ---------- 2층 (교원) : 공식 규정 반영 ---------- */
+const NOW=new Date(),NY=NOW.getFullYear(),NM=NOW.getMonth()+1;
+const mi=(y,m)=>y*12+m; // month index
+function teacherDates(cur){
+  const bm=+$('t_bm').value||5, by=NY-cur; // 출생연도(만 나이 기준 추정)
+  const ja=+($('t_jage')&&$('t_jage').value)||62;
+  let jy,jm; if(bm>=3&&bm<=8){jy=by+ja;jm=8;}else if(bm>=9){jy=by+ja+1;jm=2;}else{jy=by+ja;jm=2;}
+  return {bm,by,jy,jm,ja};
+}
+function ageAt(d,y,m){return y-d.by-(m<d.bm?1:0);}
+function buildHonOpts(g){
+  const d=teacherDates(g.cur),sel=$('t_hon'),prev=sel.value,hy=val('t_hy'),hm=val('t_hm')||1;
+  const opts=[];let y=NY,m=NM<=2?2:(NM<=8?8:2);if(NM>8)y++;
+  if(NM===2||NM===8){} // 이번 달 말 포함
+  for(let i=0;i<60;i++){const rem=mi(d.jy,d.jm)-mi(y,m);if(rem<12)break;
+    const svc=mi(y,m)-mi(hy,hm)+1;opts.push({v:y+'-'+m,y,m,rem,svc,age:ageAt(d,y,m)});
+    if(m===2)m=8;else{m=2;y++;}}
+  sel.innerHTML=opts.map(o=>`<option value="${o.v}">${o.y}년 ${o.m}월 말 · 만 ${o.age}세 · 정년까지 ${o.rem}개월${o.svc<240?' (재직 20년 미만)':''}</option>`).join('')||'<option value="">신청 가능한 날짜 없음</option>';
+  if(opts.some(o=>o.v===prev))sel.value=prev;
+  else{let best=opts.filter(o=>o.svc>=240).sort((a,b)=>Math.abs(a.rem-60)-Math.abs(b.rem-60))[0]||opts[0];if(best)sel.value=best.v;}
+}
+function retTax(P,n){ // 퇴직소득세(지방소득세 포함) — 소득세법 제48조·제55조
+  P=Math.max(0,P);n=Math.max(1,n);if(P<=0)return {tax:0,gd:0,conv:0,cd:0,base:0};
+  let gd=n<=5?100*n:n<=10?500+200*(n-5):n<=20?1500+250*(n-10):4000+300*(n-20);gd=Math.min(gd,P);
+  const conv=(P-gd)*12/n;
+  const cd=conv<=800?conv:conv<=7000?800+.6*(conv-800):conv<=10000?4520+.55*(conv-7000):conv<=30000?6170+.45*(conv-10000):15170+.35*(conv-30000);
+  const base=Math.max(0,conv-cd);return {tax:incTax(base)*n/12,gd,conv,cd,base};
+}
+function teacher(g){
+  const d=teacherDates(g.cur),type=$('t_type').value,hy=val('t_hy'),hm=Math.min(12,Math.max(1,val('t_hm')||1));
+  let ry=d.jy,rm=d.jm;
+  if(type==='hon'&&$('t_hon').value){const [y,m]=$('t_hon').value.split('-').map(Number);ry=y;rm=m;}
+  const svcM=Math.max(0,mi(ry,rm)-mi(hy,hm)+1),svcY=svcM/12;
+  const post02=Math.max(0,Math.min(svcM,mi(ry,rm)-Math.max(mi(hy,hm),mi(2002,1))+1));
+  const ratio02=svcM?post02/svcM:1;
+  const fy=Math.floor(svcY),rate=fy<1?0:fy<5?.065:fy<10?.2275:fy<15?.2925:fy<20?.325:.39;
+  const sevAuto=Math.min(36,svcY)*val('t_inc')*rate;
+  const rem=mi(d.jy,d.jm)-mi(ry,rm);
+  const pay68=val('t_pay')*0.68;
+  let honAuto=0,honMsg='',honMonths=0;
+  if(type==='hon'){
+    if(svcM<240)honMsg='명예퇴직일 기준 재직 20년 이상이어야 신청할 수 있어요 (현재 '+Math.floor(svcY)+'년 '+(svcM%12)+'개월).';
+    else if(rem<12)honMsg='정년퇴직일까지 1년 이상 남아야 신청할 수 있어요.';
+    else{honMonths=rem<=60?rem:60+(Math.min(rem,120)-60)/2;honAuto=pay68*0.5*honMonths;}
+  }
+  const s1=$('s1_calc').value==='auto'?sevAuto:val('s1_amt');
+  const s2=type!=='hon'?0:($('s2_calc').value==='auto'?honAuto:val('s2_amt'));
+  const n=Math.max(1,Math.ceil(svcM/12));
+  const P=s1*ratio02+s2;const rt=retTax(P,n);
+  const autoEff=(s1+s2)>0?rt.tax/(s1+s2):0;
+  const eff=$('p2_taxmode').value==='manual'?val('p2_tax')/100:autoEff;
+  const retireAge=ageAt(d,ry,rm);
+  // 공무원연금 개시 연령 (1996.1.1 이후 임용, 퇴직연도 기준)
+  const pubStart=hy<1996?retireAge:(ry<=2021?60:ry<=2023?61:ry<=2026?62:ry<=2029?63:ry<=2032?64:65);
+  return {d,type,ry,rm,svcM,svcY,post02,ratio02,rate,sevAuto,rem,pay68,honAuto,honMsg,honMonths,s1,s2,n,P,rt,autoEff,eff,retireAge,pubStart:Math.max(pubStart,retireAge)};
+}
+function calc2(g){
+  const on=$('p2_on').checked,T=teacher(g);
+  const start=Math.max(55,T.retireAge,val('p2_start')),years=Math.max(1,Math.round(val('p2_years'))),r=val('p2_r'),tr=T.eff;
+  const sev=[{amt:T.s1,mode:$('s1_mode').value},{amt:T.s2,mode:$('s2_mode').value}];
+  let B=val('p2_bal'),D=B; // D = 남은 이연퇴직소득(원금), B-D = 운용수익
+  const rows={};const m=mr(r);let j=0,pk=0;const TT=years*12;let lastPay=null;
+  for(let a=g.cur;a<=Math.max(g.end,start+years+1);a++){
+    let lump=0,lumpTax=0;
+    if(a===T.retireAge)for(const x of sev){if(x.amt>0){if(x.mode==='irp'){B+=x.amt;D+=x.amt;}else{lump+=x.amt;lumpTax+=x.amt*tr;}}}
+    const bJan=B,dJan=D;let gross=0,limit=Infinity,k=0;
+    if(a>=start&&B>0.5){k=++pk;if(k<=10)limit=bJan/(11-k)*1.2;
+      for(let i=0;i<12;i++){const rem=Math.max(1,TT-j);const pay=Math.min(B,B/rem);B=(B-pay)*(1+m);gross+=pay;j++;}}
+    else{for(let i=0;i<12;i++)B=B*(1+m);}
+    if(B<0.5)B=0;
+    // 인출 순서: 이연퇴직소득 → 운용수익 / 한도 이내분이 먼저 연금수령으로 인정
+    const dUse=Math.min(gross,dJan),eUse=gross-dUse;D=Math.max(0,dJan-dUse);
+    const within=Math.min(gross,limit);
+    const wD=Math.min(within,dUse),xD=dUse-wD,wE=Math.max(0,within-wD),xE=eUse-wE;
+    const cut=k<=10?0.7:k<=20?0.6:0.5;
+    const taxD=wD*tr*cut+xD*tr, taxE=wE*lowRate(a)+xE*0.165;
+    const tax=taxD+taxE;
+    if(gross>0.5)lastPay=a;
+    rows[a]={gross,tax,lump,lumpTax,bJan,k,excess:gross-within,wD,xD,wE,xE,taxD,taxE};
+  }
+  const firstPay=Object.keys(rows).map(Number).find(a=>rows[a]&&rows[a].gross>0.5);
+  return {on,start,years,rows,lastPay,firstPay,retire:T.retireAge,T,sev,s1amt:T.s1,s2amt:T.s2};
+}
+/* ---------- 3층 ---------- */
+const METHODS=[
+ {id:'limit',name:'한도분할식',tag:'기본 · 증권사 표준',how:'매년 계산되는 연금 수령한도만큼 수령',f:'한도 = 평가액 ÷ (11 − 연금수령연차) × 1.2'},
+ {id:'fixed',name:'정액식',tag:'금액 지정',how:'받을 금액(세전/세후)을 정하면 수령기간이 운용성과에 따라 변경',f:'예) 세전 월 100만원 수령 지정'},
+ {id:'period',name:'기간분할식',tag:'= 연금금액 변동형',how:'수령기간 지정, 매회 평가금액을 남은 횟수로 나누어 수령',f:'매월 평가금 ÷ 잔여회차'},
+ {id:'yearly',name:'한도분할식(연간 일정)',tag:'1년간 같은 금액',how:'매년 초 평가금액을 남은 해로 나누어 1년간 일정하게',f:'매년 초(1.1일자) 평가금액 ÷ N'},
+ {id:'free',name:'임의식',tag:'자유 인출',how:'필요할 때 자유롭게 수령',f:'인출 (나이별 금액 지정)'}
+];
+function p3params(){
+  return {start:Math.max(55,Math.round(val('p3_start'))),bal:val('p3_bal'),contrib:val('p3_contrib'),cend:val('p3_cend'),rAcc:val('p3_r'),
+    chAge:val('p3_chage'),rNew:val('p3_rnew'),taxr:val('p3_taxr')/100,k0:+$('p3_k0').value,
+    ratio:Math.min(100,Math.max(1,val('m_ratio')))/100,lend:val('m_lend'),fixed:val('m_fixed'),fixbase:$('m_fixbase').value,fixidx:$('m_fixidx').checked,
+    pyears:Math.max(1,Math.round(val('m_pyears'))),yyears:Math.max(1,Math.round(val('m_yyears'))),free:val('m_free'),ovr:st.ovr.slice()};
+}
+let CURX={on:false,map:{}};
+function simX(g,o){
+  if(!$('x_on').checked)return {on:false,map:{}};
+  const from=Math.max(g.cur,Math.round(val('x_from')));let start=Math.max(55,Math.round(val('x_start')),o.start);
+  const fix5=start<from+5;if(fix5)start=from+5;
+  const to=Math.min(Math.round(val('x_to')),start-1),amt=val('x_amt'),years=Math.max(1,Math.round(val('x_years'))),m=mr(val('x_r')),credit=$('x_credit').value==='yes';
+  let B=0,NP=0,j=0,B0=0,paid=0;const T=years*12,map={};
+  for(let a=from;a<=Math.max(g.end,start+years);a++){
+    const bJan=B;let gross=0,k=0,limit=Infinity;
+    if(a>=start&&B>0.5){k=a-start+1;if(k<=10)limit=bJan/(11-k)*1.2;if(a===start)B0=bJan;
+      for(let i=0;i<12;i++){const rem=Math.max(1,T-j);const pay=B/rem;B=(B-pay)*(1+m);gross+=pay;j++;}}
+    else{const c=(a>=from&&a<=to)?amt:0;for(let i=0;i<12;i++)B=B*(1+m)+c/12;paid+=c;if(!credit)NP+=c;}
+    if(B<0.5)B=0;
+    const npUse=Math.min(gross,NP);NP-=npUse;
+    const within=Math.min(gross,limit),tw=Math.max(0,within-npUse),tx=Math.max(0,gross-npUse-tw);
+    map[a]={gross,limit,bJan,k,tw,tx,npUse};
+  }
+  if(!B0)B0=(map[start]||{}).bJan||0;
+  return {on:true,map,from,to,amt,start,years,B0,paid,fix5,credit};
+}
+function tax3(a,gross,limit,o,g,l1,xr){
+  const within=Math.min(gross,limit),excess=Math.max(0,gross-within);
+  const taxable=within*o.taxr+(xr?xr.tw:0),outTax=excess*o.taxr*0.165+(xr?xr.tx*0.165:0);let t=0,type='-';
+  if(taxable<=0){type=gross>0?'비과세':'-';}
+  else if(taxable<=1500){t=taxable*lowRate(a);type='low';}
+  else{const sep=taxable*0.165;const L1t=l1&&l1.on&&l1.rows[a]?l1.rows[a].taxable:0;
+    const comp=Math.max(0,baseTax(g.other,L1t+taxable)-baseTax(g.other,L1t));
+    if(st.tax==='sep'){t=sep;type='sep';}else if(st.tax==='comp'){t=comp;type='comp';}else if(comp<sep){t=comp;type='comp';}else{t=sep;type='sep';}}
+  return {tax:t+outTax,type,excess:excess+(xr?Math.max(0,xr.gross-Math.min(xr.gross,xr.limit)):0)};
+}
+function sim3(o,g,method,rateMode,l1,opts){
+  opts=opts||{};const MAXA=Math.max(g.end,110);let B=o.bal;
+  for(let a=g.cur;a<o.start;a++){const m=mr(o.rAcc);for(let i=0;i<12;i++)B=B*(1+m)+(a<o.cend?o.contrib/12:0);}
+  const B0=B,rows=[];let j=0,depAge=null,lastPay=null,totGEnd=0,totTEnd=0;
+  const rPay=a=>(rateMode==='change'&&a>=o.chAge)?o.rNew:o.rAcc;
+  for(let a=o.start;a<=MAXA;a++){
+    const y=a-o.start,k=o.k0+y,r=rPay(a),m=mr(r),bJan=B;
+    if(bJan<0.5&&a>g.end)break;
+    const limit=(k<=10&&bJan>0)?bJan/(11-k)*1.2:Infinity;
+    let gross=0,monFix=0;
+    if(method==='limit'){if(k<=10)monFix=limit*o.ratio/12;else{const R=Math.max(1,o.lend-a+1);monFix=bJan/R/12;}}
+    else if(method==='fixed'){let M=(opts.fixedM!=null?opts.fixedM:o.fixed)*(o.fixidx?Math.pow(1+g.inf/100,y):1);
+      if(o.fixbase==='post'&&opts.fixedM==null){let gm=M/(1-lowRate(a)*o.taxr);if(gm*12*o.taxr>1500&&st.tax!=='comp')gm=M/(1-0.165*o.taxr);M=gm;}
+      monFix=M;}
+    else if(method==='yearly'){const left=o.yyears-y;monFix=left>0?bJan/left/12:0;}
+    else if(method==='free'){const ov=o.ovr.find(x=>Math.round(x.age)===a);monFix=(ov?ov.amt:o.free)/12;}
+    for(let i=0;i<12;i++){let pay;
+      if(method==='period'){const rem=o.pyears*12-j;pay=rem>0?B/rem:0;}
+      else if(method==='yearly'&&o.yyears-y===1)pay=B/(12-i);
+      else if(method==='limit'&&k>10&&o.lend-a<=0)pay=B/(12-i);
+      else pay=monFix;
+      if(opts.noCap)B=(B-pay)*(1+m);else{pay=Math.max(0,Math.min(B,pay));B=(B-pay)*(1+m);}
+      gross+=pay;j++;}
+    if(!opts.noCap&&B<0.5)B=0;
+    const X=opts.noX||opts.noTax?null:CURX,xr=X&&X.on?X.map[a]:null,xg=xr?xr.gross:0;
+    const tx=opts.noTax?{tax:0,type:'-',excess:0}:tax3(a,gross,limit,o,g,l1,xr);
+    if(gross>0.5)lastPay=a;
+    if(depAge==null&&B<=0.5&&gross>0.5)depAge=a;
+    const tot=gross+xg;
+    if(a<=g.end){totGEnd+=tot;totTEnd+=tx.tax;}
+    rows.push({age:a,k,bJan,mgross:gross,xg,xbal:xr?xr.bJan:0,gross:tot,limit,rate:r,...tx,net:tot-tx.tax,bEnd:B});
+    if(opts.noCap&&a>=g.end)break;
+  }
+  const leftAtEnd=(rows.find(r=>r.age===g.end)||{bEnd:0}).bEnd;
+  const years=rows.filter(r=>r.mgross>0.5&&r.age<=g.end).length+(leftAtEnd>0.5?'+':'');
+  return {B0,rows,depAge,lastPay,years,totGEnd,totTEnd,leftAtEnd};
+}
+function maxFixed(o,g,rateMode){let lo=0,hi=Math.max(10,o.bal+o.contrib*40)/12;
+  const ok=M=>sim3(o,g,'fixed',rateMode,null,{fixedM:M,noCap:true,noTax:true,noX:true}).rows.slice(-1)[0].bEnd>=0;
+  for(let i=0;i<50;i++){const mid=(lo+hi)/2;if(ok(mid))lo=mid;else hi=mid;}return lo;}
+
+/* ---------- UI build ---------- */
+const mWrap=$('methods');
+METHODS.forEach(m=>{const b=document.createElement('button');b.className='mcard';b.dataset.m=m.id;
+  b.innerHTML=`<span class="dot"></span><div class="mt">${term('m_'+m.id,m.name)}</div><span class="mtag">${m.tag}</span><div class="mh">${m.how}</div><div class="mf">${m.f}</div>`;
+  b.onclick=()=>{st.method=m.id;syncMethods();recalc();};mWrap.appendChild(b);});
+function syncMethods(){[...mWrap.children].forEach(c=>c.classList.toggle('on',c.dataset.m===st.method));[...$('mparams').children].forEach(d=>d.style.display=d.dataset.m===st.method?'':'none');}
+function renderOvr(){const w=$('ovr_list');w.innerHTML='';
+  st.ovr.forEach((o,i)=>{const d=document.createElement('div');d.className='ovr-row';
+    d.innerHTML=`<div class="inp"><input type="number" value="${o.age}" data-i="${i}" data-k="age"><span>세</span></div><div class="inp" style="width:200px"><input type="number" value="${o.amt}" step="100" data-i="${i}" data-k="amt"><span>만원</span></div><button class="btn sm x" data-del="${i}">삭제</button>`;w.appendChild(d);});
+  w.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{st.ovr[+inp.dataset.i][inp.dataset.k]=parseFloat(inp.value)||0;sched();});
+  w.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{st.ovr.splice(+b.dataset.del,1);renderOvr();recalc();});}
+$('ovr_add').onclick=()=>{const last=st.ovr.length?st.ovr[st.ovr.length-1].age+5:val('p3_start')+5;st.ovr.push({age:last,amt:2000});renderOvr();recalc();};
+function seg(id,key,cb){const s=$(id);s.querySelectorAll('button').forEach(b=>b.onclick=()=>{st[key]=b.dataset.v;syncSeg(id,key);cb&&cb();recalc();});}
+function syncSeg(id,key){$(id).querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===st[key]));}
+seg('seg_rate','rate',()=>{$('rate_change_box').style.display=st.rate==='change'?'':'none';});
+seg('seg_tax','tax');seg('seg_real','real');
+
+/* ---------- views (menu) ---------- */
+const VIEWS=['basic','layers','total','guide'];
+function route(){let v=location.hash.replace('#','');if(!VIEWS.includes(v))v='basic';
+  VIEWS.forEach(x=>$('v-'+x).classList.toggle('on',x===v));
+  document.querySelectorAll('a[data-v]').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+  hidePop();scrollTo({top:0});setTimeout(()=>Object.values(charts).forEach(c=>c&&c.resize()),60);}
+addEventListener('hashchange',route);
+
+/* pyramid + panels */
+function openTier(t,ev,force){
+  const tier=document.querySelector('.tier.t'+t);
+  tier.classList.remove('wave');void tier.offsetWidth;tier.classList.add('wave');
+  if(ev&&ev.clientX){const r=tier.getBoundingClientRect();const sp=document.createElement('span');sp.className='ripple';const s=Math.max(r.width,r.height)*2.2;
+    sp.style.width=sp.style.height=s+'px';sp.style.left=(ev.clientX-r.left)+'px';sp.style.top=(ev.clientY-r.top)+'px';tier.appendChild(sp);setTimeout(()=>sp.remove(),950);}
+  st.open=(st.open===t&&ev&&!force)?0:t;
+  [1,2,3].forEach(i=>{$('panel'+i).classList.toggle('open',st.open===i);const ti=document.querySelector('.tier.t'+i);ti.classList.toggle('active',st.open===i);ti.setAttribute('aria-expanded',st.open===i);});
+  save();
+  if(st.open){setTimeout(()=>Object.values(charts).forEach(c=>c&&c.resize()),600);
+    if(ev)setTimeout(()=>$('panel'+st.open).scrollIntoView({behavior:'smooth',block:'start'}),380);}
+}
+document.querySelectorAll('.tier').forEach(b=>b.addEventListener('click',e=>openTier(+b.dataset.t,e)));
+document.querySelectorAll('[data-tier]').forEach(b=>b.addEventListener('click',e=>{if(location.hash!=='#layers'){location.hash='layers';}setTimeout(()=>openTier(+b.dataset.tier,{},true),80);}));
+$('gapFit').onclick=()=>{const rt=calc2(gNow()).retire,st1=Math.round(val('p1_start'));const s0=Math.max(55,rt);$('p2_start').value=s0;$('p2_years').value=Math.max(1,st1-s0);recalc();};
+const gNow=()=>({cur:Math.round(val('g_cur')),end:Math.round(val('g_end')),inf:val('g_inf'),other:val('g_other')});
+$('bigToggle').onclick=()=>{document.documentElement.classList.toggle('big');save();setTimeout(()=>Object.values(charts).forEach(c=>c&&c.resize()),50);};
+
+function est(){const m=val('e_inc')*Math.min(36,val('e_years'))*val('e_rate')/100;$('e_out').textContent='추정 월 연금액 ≈ '+f0(m)+'만원';return m;}
+$('e_apply').onclick=()=>{$('p1_month').value=Math.round(est());recalc();};
+
+/* ---------- charts ---------- */
+Chart.defaults.font.family="'Noto Sans KR',system-ui,sans-serif";Chart.defaults.font.size=14;Chart.defaults.color='#3c4a44';
+const baseOpts=stacked=>({responsive:true,maintainAspectRatio:false,animation:{duration:450},interaction:{mode:'index',intersect:false},
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(14,48,37,.92)',titleFont:{size:15,weight:'700'},bodyFont:{size:14},padding:12,boxPadding:6,cornerRadius:12,
+    callbacks:{title:it=>it[0].label+'세',label:c=>' '+c.dataset.label+': '+f0(c.parsed.y)+'만원'}}},
+  scales:{x:{stacked,grid:{display:false},ticks:{maxRotation:0,autoSkip:true,autoSkipPadding:10,callback:function(v){return this.getLabelForValue(v)+'세';}},border:{color:'rgba(15,77,58,.3)'}},
+          y:{stacked,beginAtZero:true,grid:{color:'rgba(15,77,58,.08)'},border:{display:false},ticks:{callback:v=>manS(v)}}}});
+const charts={};
+function payOpts(){const o=baseOpts(true);o.plugins.tooltip.callbacks.footer=it=>'세전 합계: '+f0(it.reduce((a,b)=>a+b.parsed.y,0))+'만원';o.plugins.tooltip.footerFont={size:15,weight:'800'};return o;}
+let hatch=CT;try{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d');x.fillStyle='#d9dfdb';x.fillRect(0,0,8,8);x.strokeStyle='#9eaaa3';x.lineWidth=2;x.beginPath();x.moveTo(0,8);x.lineTo(8,0);x.moveTo(-2,2);x.lineTo(2,-2);x.moveTo(6,10);x.lineTo(10,6);x.stroke();hatch=x.createPattern(c,'repeat');}catch(e){}
+const barDS=(label,color)=>({label,data:[],backgroundColor:color,borderColor:'rgba(255,255,255,.95)',borderWidth:{top:2,left:0,right:0,bottom:0},borderRadius:{topLeft:4,topRight:4},borderSkipped:'bottom',maxBarThickness:34,categoryPercentage:.8,barPercentage:.9});
+charts.m1=new Chart($('c1m'),{type:'bar',data:{labels:[],datasets:[barDS('세후 (월)',C1),barDS('세금 (월)',CT)]},options:payOpts()});
+charts.m2=new Chart($('c2m'),{type:'bar',data:{labels:[],datasets:[barDS('세후 (월)',C2),barDS('세금 (월)',CT)]},options:payOpts()});
+charts.m3=new Chart($('c3m'),{type:'bar',data:{labels:[],datasets:[barDS('세후 (월)',C3),barDS('세금 (월)',CT)]},options:payOpts()});
+charts.p1=new Chart($('c1pay'),{type:'bar',data:{labels:[],datasets:[barDS('세후 수령액',C1),barDS('세금',CT)]},options:payOpts()});
+charts.p2=new Chart($('c2pay'),{type:'bar',data:{labels:[],datasets:[barDS('세후 수령액',C2),barDS('세금',CT)]},options:payOpts()});
+charts.pay=new Chart($('c3pay'),{type:'bar',data:{labels:[],datasets:[barDS('세후 수령액',C3),barDS('세금',CT)]},options:payOpts()});
+charts.bal=new Chart($('c3bal'),{type:'line',data:{labels:[],datasets:[
+  {label:'평가금액',data:[],borderColor:C2,backgroundColor:'rgba(30,155,110,.1)',fill:true,borderWidth:2.5,pointRadius:0,pointHoverRadius:6,tension:.2},
+  {label:'수익률 유지 시',data:[],borderColor:'#7f8c86',borderDash:[6,5],borderWidth:2,pointRadius:0,pointHoverRadius:5,tension:.2},
+  {label:'추가 계좌',data:[],borderColor:'#5f7414',borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:.2}]},options:baseOpts(false)});
+(()=>{const o=baseOpts(true);o.plugins.tooltip.callbacks.footer=items=>{const b=items.filter(i=>i.dataset.stack!=='t');const net=b.filter(i=>i.dataset.label!=='세금').reduce((a,x)=>a+x.parsed.y,0);const tx=b.filter(i=>i.dataset.label==='세금').reduce((a,x)=>a+x.parsed.y,0);return ['세후 합계: '+f0(net)+'만원','세전 합계: '+f0(net+tx)+'만원'];};o.plugins.tooltip.footerFont={size:15,weight:'800'};
+  o.plugins.tooltip.filter=i=>i.parsed.y>0||i.dataset.stack==='t';
+  const mk=id=>new Chart($(id),{type:'bar',data:{labels:[],datasets:[barDS('1층 세후',C1),barDS('2층 세후',C2),barDS('3층 세후',C3),barDS('일시금 세후',CL),barDS('세금',hatch),
+    {type:'line',label:'목표 생활비',data:[],borderColor:'#16231e',borderDash:[7,5],borderWidth:2,pointRadius:0,pointHoverRadius:0,stack:'t',fill:false}]},options:o});
+  charts.all=mk('cAll');charts.allM=mk('cAllM');})();
+function setM(ch,ages,net,tax){ch.data.labels=ages;ch.data.datasets[0].data=net.map(x=>Math.round(x/12));ch.data.datasets[1].data=tax.map(x=>Math.round(x/12));ch.update();}
+function bandsHTML(ages,netY){const b={};ages.forEach((a,i)=>{if(netY[i]<=0.5)return;const k=Math.floor(a/5)*5;(b[k]=b[k]||[]).push(netY[i]);});
+  const ks=Object.keys(b).map(Number).sort((x,y)=>x-y);if(!ks.length)return '<span>받는 돈 없음</span>';
+  return ks.map(k=>{const v=b[k];const lo=Math.min(...ages.filter((a,i)=>Math.floor(a/5)*5===k&&netY[i]>0.5)),hi=Math.max(...ages.filter((a,i)=>Math.floor(a/5)*5===k&&netY[i]>0.5));
+    return `<span>${lo===hi?lo+'세':lo+'~'+hi+'세'}<b>월 ${f0(v.reduce((a,c)=>a+c,0)/v.length/12)}만원</b></span>`;}).join('');}
+
+/* ---------- icons + stat ---------- */
+const IC={
+ wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12.5h2M3 9h15a3 3 0 0 0-3-3"/></svg>',
+ cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',
+ clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+ coins:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v5c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M15 11.5c3 .3 6 1.4 6 3.5v0c0 1.7-2.7 3-6 3-1.5 0-2.8-.3-3.9-.7"/></svg>',
+ gift:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8S10 3 7.5 4.5 9 8 12 8zm0 0s2-5 4.5-3.5S15 8 12 8z"/></svg>',
+ user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>'
+};
+const stat=(cls,ic,l,v,s)=>`<div class="stat ${cls}"><div class="sh"><span class="ic">${IC[ic]}</span><span>${l}</span></div><div class="sv">${v}</div><div class="ss">${s||''}</div></div>`;
+
+/* ---------- main recalc ---------- */
+let tmr=null;function sched(){clearTimeout(tmr);tmr=setTimeout(recalc,120);}
+function recalc(){
+  const g={cur:Math.round(val('g_cur')),end:Math.round(val('g_end')),inf:val('g_inf'),other:val('g_other'),target:val('g_target')};
+  if(g.end<=g.cur)g.end=g.cur+1;
+  const pv=a=>Math.pow(1+g.inf/100,a-g.cur);
+  est();$('rate_keep_txt').textContent=val('p3_r')+'%';$('rate_note').style.display=st.rate==='keep'?'':'none';
+  buildHonOpts(g);
+  {const T0=teacher(g),e=+$('p1_early').value,hy=val('t_hy'),hm=Math.round(val('t_hm'))||1;
+   const sa=$('p1_smode').value==='auto',ta=$('p1_tmode').value==='auto';
+   $('p1_start').readOnly=sa;$('p1_taxr').readOnly=ta;
+   if(sa)$('p1_start').value=T0.pubStart-e;
+   if(ta)$('p1_taxr').value=Math.round(T0.ratio02*100);
+   const basisS=hy<1996?`${hy}년 임용(1995년 이전) → 퇴직 시 바로 받음`:`${T0.ry}년 퇴직 · ${hy}년 임용(1996년 이후) → ${T0.pubStart}세`;
+   $('p1_start_h').innerHTML=sa?`<span class="autotag">자동</span>${basisS}${e?` · 조기 ${e}년 → ${T0.pubStart-e}세`:''}`:`직접 입력 중 · 퇴직연도 기준이면 ${T0.pubStart}세`;
+   $('p1_taxr_h').innerHTML=ta?`<span class="autotag">자동</span>임용 ${hy}년 ${hm}월 · 2002년 이후 재직 ${Math.round(T0.ratio02*100)}% 기준`:`직접 입력 중 · 임용 기준 자동값은 ${Math.round(T0.ratio02*100)}%`;}
+  const l1=calc1(g),l2=calc2(g),o=p3params();
+  $('p3_start_w').innerHTML=val('p3_start')<55?'<span class="warntext">55세 이상만 연금 수령 가능 → 55세로 계산</span>':'55세 이상, 가입 5년 이상';
+  CURX=simX(g,o);
+  $('x_box').style.display=$('x_on').checked?'':'none';
+  $('p3_cend_w').innerHTML=val('p3_cend')>o.start?`<span class="warntext">개시 나이(${o.start}세) 이후 납입분은 반영되지 않아요 → 아래 '수령 중 추가 납입'을 사용하세요</span>`:'개시 나이 전까지만 납입돼요';
+  if(CURX.on){const X=CURX,xf=Object.keys(X.map).map(Number).filter(a=>X.map[a].gross>0.5);const f=xf.length?X.map[xf[0]]:null;
+    $('x_start_w').innerHTML=X.fix5?`<span class="warntext">가입 5년 조건 때문에 ${X.start}세부터 받도록 계산했어요</span>`:'가입 후 5년이 지나야 연금으로 받을 수 있어요';
+    $('x_out').innerHTML=`${X.from}~${X.to}세 연 ${f0(X.amt)}만원 납입 (원금 <b>${man(X.paid)}</b>) → ${X.start}세 개시 때 <b class="big">${man(X.B0)}</b><br>
+      ${X.start}~${xf.length?xf[xf.length-1]:'-'}세 동안 첫해 월 <b class="big">${f?f0(f.gross/12):0}만원</b> (세전) 추가 수령 · 기존 3층 수령액과 <b>합쳐서 1,500만원 기준</b>을 판단해요${X.credit?' · 납입 기간 세액공제 환급 예상 연 최대 '+f0(Math.min(X.amt,900)*0.132)+'~'+f0(Math.min(X.amt,900)*0.165)+'만원':''}`;}
+  const s=sim3(o,g,st.method,st.rate,l1);const sKeep=st.rate==='change'?sim3(o,g,st.method,'keep',l1):s;
+
+  const f1=l1.rows[Math.max(l1.start,g.cur)];
+  $('tv1').textContent=f1&&f1.gross?'월 '+f0(f1.gross/12)+'만원':'월 —';$('ts1').textContent=l1.start+'세부터 평생 · 물가연동';
+  const firstL2t=Object.values(l2.rows).find(r=>r.gross>0.5);
+  $('tv2').textContent=firstL2t?'월 '+f0(firstL2t.gross/12)+'만원':'월 —';$('ts2').textContent=firstL2t?(l2.firstPay+'~'+l2.lastPay+'세 ('+(l2.lastPay-l2.firstPay+1)+'년)'):'';
+  const fr=s.rows.find(r=>r.gross>0.5);$('tv3').textContent=fr?'월 '+f0(fr.gross/12)+'만원':'월 —';
+  [1,2,3].forEach(i=>document.querySelector('.tier.t'+i).style.opacity=$('p'+i+'_on').checked?1:.45);
+
+  /* 1층 name + chart */
+  const pn=$('p1_type').value==='pri'?'사학연금':'공무원연금';$('p1_name').textContent=pn;$('tier1name').textContent=pn;
+  const a1=[];for(let a=Math.max(l1.start,g.cur);a<=g.end;a++)a1.push(a);
+  {const n=a1.map(a=>l1.rows[a].gross-l1.rows[a].tax),t=a1.map(a=>l1.rows[a].tax);setM(charts.m1,a1,n,t);}
+  charts.p1.data.labels=a1;charts.p1.data.datasets[0].data=a1.map(a=>Math.round(l1.rows[a].gross-l1.rows[a].tax));charts.p1.data.datasets[1].data=a1.map(a=>Math.round(l1.rows[a].tax));charts.p1.update();
+  /* 2층 (교원) */
+  const T=l2.T;
+  $('t_hon_f').style.display=T.type==='hon'?'':'none';$('s2_card').style.display=T.type==='hon'?'':'none';
+  $('s1_amt_f').style.display=$('s1_calc').value==='manual'?'':'none';
+  $('s2_amt_f').style.display=$('s2_calc').value==='manual'?'':'none';
+  $('p2_tax_f').style.display=$('p2_taxmode').value==='manual'?'':'none';
+  $('t_jage_h').innerHTML=T.d.ja>62?'<span class="warntext">법 개정 전 가정이에요 (2026년 현재 미확정)</span>':'교육공무원법 — 임용연도와 관계없이 62세';
+  $('t_sum').innerHTML=`<b>정년퇴직일</b> ${T.d.jy}년 ${T.d.jm}월 말 (만 ${T.d.ja}세 학기말${T.d.ja>62?' · 정년연장 가정':''}) · <b>${T.type==='hon'?'명예퇴직일':'퇴직일'}</b> ${T.ry}년 ${T.rm}월 말, 만 <b class="big">${T.retireAge}세</b><br>
+    재직기간 <b>${Math.floor(T.svcM/12)}년 ${T.svcM%12}개월</b> · 2002년 이후 재직 ${Math.round(T.ratio02*100)}%
+    · 공무원연금 개시 예상 <b>${T.pubStart}세</b>${val('t_hy')<1996?' (1995년 이전 임용: 퇴직 시 바로)':' (1996년 이후 임용, 퇴직연도 기준)'}
+    ${$('p1_smode').value==='auto'&&$('p1_tmode').value==='auto'?'<span class="pill" style="background:var(--g100);color:var(--g700);margin-left:6px">✓ 1층에 자동 연동 중</span>':'<button class="btn sm" id="applyL1" style="margin-left:6px">1층에 자동 연동</button>'}`;
+  if($('applyL1'))$('applyL1').onclick=()=>{$('p1_smode').value='auto';$('p1_tmode').value='auto';recalc();};
+  $('s1_out').innerHTML=$('s1_calc').value==='auto'
+    ? `자동 계산 퇴직수당 <b class="big">${man(T.sevAuto)}</b><br><span class="note">재직 ${(Math.min(36,T.svcY)).toFixed(1)}년(최대 36년) × 평균 기준소득월액 ${f0(val('t_inc'))}만원 × ${term('sevrate','지급비율')} ${(T.rate*100).toFixed(2).replace(/\.?0+$/,'')}% · 공무원연금법 시행령 제58조 · 퇴직수당 중 <b>2002년 이후 재직분(${Math.round(T.ratio02*100)}%)만</b> 퇴직소득세 과세</span>`
+    : `입력한 퇴직수당 <b class="big">${man(T.s1)}</b>`;
+  if(T.type==='hon'){
+    $('s2_out').innerHTML=$('s2_calc').value==='manual'?`입력한 명예퇴직수당 <b class="big">${man(T.s2)}</b> · 전액 퇴직소득세 과세`:
+      (T.honMsg?`<span class="warntext">${T.honMsg}</span>`:
+      `자동 계산 명예퇴직수당 <b class="big">${man(T.honAuto)}</b><br><span class="note">월봉급액 = 본봉 ${f0(val('t_pay'))}만원 × 68% = ${f0(T.pay68)}만원 → 반액 ${f0(T.pay68/2)}만원 × ${T.rem<=60?'정년잔여 '+T.rem+'개월':'[60 + ('+Math.min(T.rem,120)+' − 60) ÷ 2] = '+T.honMonths+'개월'}${T.rem>120?' (10년 초과분 미지급)':''}<br>정년잔여기간은 명예퇴직일 다음 달 1일부터 계산 · 전액 퇴직소득세 과세 · 실제 지급은 교육청 예산·심사로 결정</span>`);
+  }
+  const rt=T.rt;
+  $('t_tax').innerHTML=`<thead><tr><th style="text-align:left">단계</th><th>금액 (만원)</th><th style="text-align:left">설명</th></tr></thead><tbody>
+   <tr><td style="text-align:left">과세 대상 퇴직소득</td><td>${f0(T.P)}</td><td style="text-align:left">퇴직수당 ${f0(T.s1)} × ${Math.round(T.ratio02*100)}%${T.s2?' + 명예퇴직수당 '+f0(T.s2):''}</td></tr>
+   <tr><td style="text-align:left">근속연수공제</td><td>− ${f0(rt.gd)}</td><td style="text-align:left">근속 ${T.n}년 (1년 미만은 1년)</td></tr>
+   <tr><td style="text-align:left">환산급여</td><td>${f0(rt.conv)}</td><td style="text-align:left">(소득 − 근속연수공제) × 12 ÷ ${T.n}</td></tr>
+   <tr><td style="text-align:left">환산급여공제</td><td>− ${f0(rt.cd)}</td><td style="text-align:left">구간별 100%~35% 공제</td></tr>
+   <tr><td style="text-align:left">과세표준</td><td>${f0(rt.base)}</td><td style="text-align:left">기본세율 6~45% 적용</td></tr>
+   <tr class="mile"><td style="text-align:left">퇴직소득세 (지방세 포함)</td><td class="hl">${f0(rt.tax)}</td><td style="text-align:left">환산산출세액 × ${T.n} ÷ 12 × 1.1</td></tr>
+   <tr class="mile"><td style="text-align:left">실효세율</td><td class="hl">${(T.autoEff*100).toFixed(2)}%</td><td style="text-align:left">세금 ÷ (퇴직수당+명예퇴직수당) ${$('p2_taxmode').value==='manual'?'· <b>현재 직접 입력 '+val('p2_tax')+'% 사용 중</b>':'· 계산에 자동 적용'}</td></tr></tbody>`;
+  $('t_tax_note').innerHTML='일시금으로 받으면 이 세금을 바로 냅니다. IRP로 옮기면 세금을 미뤘다가, 연금으로 받을 때 <b>한도 이내분은 30%(11~20년차 40%, 21년차부터 50%) 감면</b>, 한도 초과분은 감면 없이 냅니다. IRP 안에서 불어난 <b>운용수익</b>은 퇴직소득세가 아니라 연금소득세(3.3~5.5%) · 한도 초과 시 기타소득세 16.5%가 붙어요.';
+  const gapY=Math.max(0,val('p1_start')-T.retireAge);
+  $('gapNote').innerHTML=gapY>0?`퇴직 ${T.retireAge}세 → 1층 연금 ${val('p1_start')}세: <b>${gapY}년 공백</b>. 누르면 IRP를 ${Math.max(55,T.retireAge)}세부터 ${Math.max(1,val('p1_start')-Math.max(55,T.retireAge))}년간 받도록 맞춰요.`:'1층 연금이 퇴직과 동시에 시작돼 공백이 없어요.';
+  const l2rows=Object.keys(l2.rows).map(Number).filter(a=>a<=g.end).map(a=>({a,...l2.rows[a]}));
+  const firstL2=l2rows.find(r=>r.gross>0.5);
+  const tot2=l2rows.reduce((x,r)=>x+r.gross,0),tax2=l2rows.reduce((x,r)=>x+r.tax,0);
+  const lumpSum=l2rows.reduce((x,r)=>x+r.lump,0),lumpTax=l2rows.reduce((x,r)=>x+r.lumpTax,0);
+  const ex2=l2rows.some(r=>r.excess>0.5);
+  $('k2').innerHTML=
+   stat('','wallet','IRP로 옮긴 금액',manK(l2.sev.filter(x=>x.mode==='irp').reduce((a,x)=>a+x.amt,0)+val('p2_bal')),l2.retire+'세 퇴직 · 기존 적립금 포함')+
+   stat('hero','cal','첫해 월 수령액',firstL2?f0(firstL2.gross/12)+'<small>만원</small>':'—',firstL2?'세후 약 '+f0((firstL2.gross-firstL2.tax)/12)+'만원':'IRP 연금 없음')+
+   stat('','clock','수령 기간',firstL2?(l2.lastPay-firstL2.a+1)+'<small>년</small>':'—',firstL2?firstL2.a+'세 ~ '+l2.lastPay+'세':'')+
+   stat('','gift',term('lump','일시금')+' 수령',lumpSum?manK(lumpSum):'없음',lumpSum?'퇴직소득세 약 '+man(lumpTax)+' (감면 없음)':'모두 IRP로 연금화');
+  if(ex2){const ex=l2rows.filter(r=>r.excess>0.5);const extra=ex.reduce((x,r)=>x+r.xD*T.eff*0.3+r.xE*(0.165-lowRate(r.a)),0);
+    $('gapNote').innerHTML+=` <span class="warntext">※ ${ex[0].a}~${ex[ex.length-1].a}세에 연금수령한도를 넘는 ${man(ex.reduce((x,r)=>x+r.excess,0))}은 감면 없이 과세 → 세금 약 ${man(extra)} 더 냄</span>`;}
+  {let h=`<thead><tr><th>나이</th><th>${term('year','연차')}</th><th>연초 잔액</th><th>${term('limit','연금수령한도')}</th><th>수령액</th><th>퇴직소득<br>한도 내</th><th>퇴직소득<br>한도 초과</th><th>운용수익<br>인출</th><th>세금</th><th class="hl">세후</th><th class="hl">세후(월)</th><th>실제 세율</th></tr></thead><tbody>`;
+   l2rows.filter(r=>r.gross>0.5).forEach(r=>{const lim=r.k<=10?f0(r.bJan/(11-r.k)*1.2):'한도 없음';
+     h+=`<tr class="${r.excess>0.5?'':''}"><td>${r.a}세</td><td>${r.k}</td><td>${f0(r.bJan)}</td><td>${lim}</td><td>${f0(r.gross)}</td><td>${f0(r.wD)}<br><span class="note">×${(T.eff*100).toFixed(2)}%×${r.k<=10?'70':r.k<=20?'60':'50'}%</span></td><td>${r.xD>0.5?'<span style="color:#b3261e;font-weight:800">'+f0(r.xD)+'</span><br><span class="note">감면 없음</span>':'-'}</td><td>${(r.wE+r.xE)>0.5?f0(r.wE+r.xE)+'<br><span class="note">'+(r.xE>0.5?'초과분 16.5%':'연금소득세')+'</span>':'-'}</td><td>${f0(r.tax)}</td><td class="hl">${f0(r.gross-r.tax)}</td><td class="hl"><b>${f0((r.gross-r.tax)/12)}</b></td><td>${(r.tax/r.gross*100).toFixed(2)}%</td></tr>`;});
+   $('t2').innerHTML=h+'</tbody>';}
+  const a2=l2rows.filter(r=>r.a>=(firstL2?firstL2.a:l2.retire));
+  {const ag=a2.map(r=>r.a),n=a2.map(r=>r.gross-r.tax),t=a2.map(r=>r.tax);setM(charts.m2,ag,n,t);}
+  charts.p2.data.labels=a2.map(r=>r.a);charts.p2.data.datasets[0].data=a2.map(r=>Math.round(r.gross-r.tax));charts.p2.data.datasets[1].data=a2.map(r=>Math.round(r.tax));charts.p2.update();
+  /* 3층 stats */
+  $('k3').innerHTML=
+   stat('c3','wallet','개시 때 '+term('eval','평가금액'),manK(s.B0),o.start+'세 · '+term('pv','현재가치')+' '+man(s.B0/pv(o.start)))+
+   stat('hero','cal','첫해 월 수령액',fr?f0(fr.gross/12)+'<small>만원</small>':'—',fr?'세전 기준 · 세후 '+f0(fr.net/12)+'만원':'')+
+   stat('c3','clock','수령 기간',s.years+'<small>년</small>',s.lastPay?o.start+'세 ~ '+Math.min(s.lastPay,g.end)+'세':'')+
+   stat('c3','flag',term('deplete','소진 나이'),s.leftAtEnd>0.5?g.end+'<small>세 이후</small>':(s.depAge?s.depAge+'<small>세</small>':'—'),s.leftAtEnd>0.5?g.end+'세 때 '+man(s.leftAtEnd)+' 남음':'이 나이에 잔액 0원')+
+   stat('c3','coins','총 세후 수령액',manK(s.totGEnd-s.totTEnd),'~'+g.end+'세 · 세금 '+man(s.totTEnd));
+
+  if(st.method==='fixed'){const mx=maxFixed(o,g,st.rate);
+    $('fix_out').innerHTML=`월 <b>${f0(o.fixed)}만원</b>${o.fixbase==='post'?'(세후)':''}씩 받으면 <b class="big">${s.leftAtEnd>0.5?g.end+'세까지 받고도 '+man(s.leftAtEnd)+' 남아요':(s.depAge?s.depAge+'세에 소진 → 최대 '+s.years+'년 수령':'—')}</b><br>${g.end}세까지 바닥나지 않으려면 최대 <b class="big">월 ${f0(mx)}만원</b> (세전${o.fixidx?', 매년 물가 증액':''})`;}
+  if(st.rate==='change'){const d=(s.totGEnd-s.totTEnd)-(sKeep.totGEnd-sKeep.totTEnd);$('rate_cmp').style.display='';
+    $('rate_cmp').innerHTML=`<b>수익률 변경 효과</b> · ${o.chAge}세부터 ${o.rAcc}% → ${o.rNew}%<br>총 세후 수령액(~${g.end}세) 유지 시 <b>${man(sKeep.totGEnd-sKeep.totTEnd)}</b> → 변경 시 <b>${man(s.totGEnd-s.totTEnd)}</b> (<b>${d>=0?'+':''}${man(d)}</b>) · 소진 나이 유지 ${sKeep.leftAtEnd>0.5?g.end+'세 이후':(sKeep.depAge||'—')+'세'} / 변경 ${s.leftAtEnd>0.5?g.end+'세 이후':(s.depAge||'—')+'세'}`;}
+  else $('rate_cmp').style.display='none';
+
+  const showR=s.rows.filter(r=>r.age<=g.end);
+  {const ag=showR.map(r=>r.age),n=showR.map(r=>r.net),t=showR.map(r=>r.tax);setM(charts.m3,ag,n,t);}
+  charts.pay.data.labels=showR.map(r=>r.age);charts.pay.data.datasets[0].data=showR.map(r=>Math.round(r.net));charts.pay.data.datasets[1].data=showR.map(r=>Math.round(r.tax));charts.pay.update();
+  const balAges=[];for(let a=o.start;a<=g.end;a++)balAges.push(a);
+  const bmap=r=>{const m={};r.rows.forEach(x=>m[x.age]=x.bJan);return a=>m[a]!=null?Math.round(m[a]):0;};
+  charts.bal.data.labels=balAges;charts.bal.data.datasets[0].data=balAges.map(bmap(s));charts.bal.data.datasets[1].data=st.rate==='change'?balAges.map(bmap(sKeep)):[];
+  charts.bal.data.datasets[2].data=CURX.on?balAges.map(a=>Math.round((s.rows.find(r=>r.age===a)||{}).xbal||0)):[];
+  charts.bal.data.datasets[0].label=st.rate==='change'?'수익률 변경':'평가금액';charts.bal.update();
+  $('balLegend').innerHTML=st.rate==='change'?`<span><i class="ln" style="background:${C2}"></i>수익률 변경</span><span><i class="dash" style="border-top-color:#7f8c86"></i>수익률 유지 시</span>`:`<span><i class="ln" style="background:${C2}"></i>연초 평가금액</span>`;
+  if(CURX.on)$('balLegend').innerHTML+='<span><i class="ln" style="background:#5f7414"></i>추가 계좌</span>';
+
+  let h=`<thead><tr><th>나이</th><th>${term('year','연차')}</th><th>연초 평가액</th><th>수익률</th>${CURX.on?'<th>기존 계좌</th><th>추가 계좌</th>':''}<th>연간 수령액</th><th>월 수령액</th><th style="text-align:left">과세 방법</th><th>세금(연)</th><th class="hl">세후(연)</th><th class="hl">세후(월)</th><th>연말 잔액</th><th>세후 월<br>(${term('pv','현재가치')})</th></tr></thead><tbody>`;
+  for(const r of showR){const dead=r.gross<0.5;
+    const pill=r.type==='low'?`<span class="pill">연금소득세 ${(lowRate(r.age)*100).toFixed(1)}%</span>`:r.type==='sep'?'<span class="pill sep">분리과세 16.5%</span>':r.type==='comp'?'<span class="pill comp">종합과세</span>':'<span class="pill">'+r.type+'</span>';
+    const out=r.excess>0.5?' <span class="pill out">한도초과 '+f0(r.excess)+'</span>':'';
+    h+=`<tr class="${r.age%5===0?'mile':''} ${dead?'dead':''}"><td>${r.age}세</td><td>${r.k}</td><td>${f0(r.bJan)}</td><td>${r.rate}%</td>${CURX.on?'<td>'+f0(r.mgross)+'</td><td>'+f0(r.xg)+'</td>':''}<td>${f0(r.gross)}</td><td>${f0(r.gross/12)}</td><td style="text-align:left">${dead?'-':pill+out}</td><td>${f0(r.tax)}</td><td class="hl">${f0(r.net)}</td><td class="hl"><b>${f0(r.net/12)}</b></td><td>${f0(r.bEnd)}</td><td>${f0(r.net/12/pv(r.age))}</td></tr>`;}
+  h+=`<tr class="mile"><td>합계</td><td></td><td></td><td></td>${CURX.on?'<td></td><td></td>':''}<td>${f0(s.totGEnd)}</td><td></td><td></td><td>${f0(s.totTEnd)}</td><td class="hl">${f0(s.totGEnd-s.totTEnd)}</td><td class="hl"></td><td></td><td></td></tr></tbody>`;
+  $('t3').innerHTML=h;
+  let hc=`<thead><tr><th style="text-align:left">수령 방식</th><th>첫해 월 수령액</th><th>수령 기간</th><th>${term('deplete','소진 나이')}</th><th class="hl">총 세후 수령액 (~${g.end}세)</th><th>총 세금</th></tr></thead><tbody>`;
+  METHODS.forEach(m=>{const x=m.id===st.method?s:sim3(o,g,m.id,st.rate,l1);const f=x.rows.find(r=>r.gross>0.5);
+    hc+=`<tr class="${m.id===st.method?'mile':''}"><td style="text-align:left">${m.id===st.method?'▶ ':''}${m.name}</td><td>${f?f0(f.gross/12):'-'}</td><td>${x.years}년</td><td>${x.leftAtEnd>0.5?g.end+'세 이후':(x.depAge?x.depAge+'세':'-')}</td><td class="hl">${f0(x.totGEnd-x.totTEnd)}</td><td>${f0(x.totTEnd)}</td></tr>`;});
+  $('tcmp').innerHTML=hc+'</tbody>';
+
+  /* ---------- combined ---------- */
+  const on1=l1.on,on2=l2.on,on3=$('p3_on').checked;const s3map={};s.rows.forEach(r=>s3map[r.age]=r);
+  const starts=[];if(on1)starts.push(l1.start);if(on2)starts.push(Math.min(l2.firstPay||99,l2.retire));if(on3)starts.push(o.start);
+  const a0=Math.max(g.cur,starts.length?Math.min(...starts):g.cur);
+  const ages=[];for(let a=a0;a<=g.end;a++)ages.push(a);
+  const incLump=$('c_lump').checked,div=1;
+  const comb=ages.map(a=>{const r1=on1?l1.rows[a]:null,r2=on2?l2.rows[a]:null,r3=on3?s3map[a]:null;
+    const c={a,g1:r1?r1.gross:0,t1:r1?r1.tax:0,g2:r2?r2.gross:0,t2:r2?r2.tax:0,g3:r3?r3.gross:0,t3:r3?r3.tax:0,lp:r2?r2.lump:0,lpt:r2?r2.lumpTax:0};c.G=c.g1+c.g2+c.g3;c.T=c.t1+c.t2+c.t3;return c;});
+  const tf=(x,a)=>x/div/(st.real==='real'?pv(a):1);
+  charts.all.data.labels=ages;
+  [1,2,3].forEach(k=>charts.all.data.datasets[k-1].data=comb.map(c=>Math.round(tf(c['g'+k]-c['t'+k],c.a))));
+  charts.all.data.datasets[3].data=incLump?comb.map(c=>Math.round(tf(c.lp-c.lpt,c.a))):[];
+  charts.all.data.datasets[4].data=comb.map(c=>Math.round(tf(c.T+(incLump?c.lpt:0),c.a)));
+  charts.all.data.datasets[5].data=comb.map(c=>Math.round(g.target*12/div*(st.real==='real'?1:pv(c.a))));
+  charts.all.update();$('lgLump').style.display=incLump?'':'none';document.querySelectorAll('.lgLumpX').forEach(e=>e.style.display=incLump?'':'none');
+  charts.allM.data.labels=ages;charts.all.data.datasets.forEach((d,i)=>{charts.allM.data.datasets[i].data=d.data.map(v=>Math.round(v/12));});charts.allM.update();
+  $('cAllMUnit').textContent=`(단위: 만원/월 · 세전·세후 동시 · ${st.real==='real'?'현재가치':'명목'})`;
+  $('cAllUnit').textContent=`(단위: 만원/년 · 세전·세후 동시 · ${st.real==='real'?'현재가치':'명목'})`;
+  $('cAllTitle').textContent='나이별 연간 연금 수령액 (누적)';
+  $('tAllUnit').textContent=`(단위: 만원 · ${st.real==='real'?'현재가치':'명목'})`;
+  const R=(x,a)=>f0(x/(st.real==='real'?pv(a):1));let sumG=0,sumT=0;
+  let ht=`<thead><tr><th>나이</th><th>1층 (연)</th><th>2층 (연)</th><th>3층 (연)</th><th>합계 세전 (연)</th><th>세금 (연)</th><th class="hl">합계 세후 (연)</th><th>합계 세전 (월)</th><th class="hl">합계 세후 (월)</th><th>목표 대비</th><th>${term('lump','일시금')}</th></tr></thead><tbody>`;
+  comb.forEach(c=>{sumG+=c.G;sumT+=c.T;const tgt=g.target*12*pv(c.a);const ratio=c.G?((c.G-c.T)/tgt*100):0;
+    ht+=`<tr class="${c.a%5===0?'mile':''}"><td>${c.a}세</td><td>${R(c.g1,c.a)}</td><td>${R(c.g2,c.a)}</td><td>${R(c.g3,c.a)}</td><td>${R(c.G,c.a)}</td><td>${R(c.T,c.a)}</td><td class="hl">${R(c.G-c.T,c.a)}</td><td>${R(c.G/12,c.a)}</td><td class="hl"><b>${R((c.G-c.T)/12,c.a)}</b></td><td style="color:${ratio>=100?'#0f6b4f':'#b3261e'};font-weight:700">${c.G?Math.round(ratio)+'%':'-'}</td><td>${c.lp?R(c.lp,c.a):''}</td></tr>`;});
+  $('tAll').innerHTML=ht+'</tbody>';
+  const ms=[];const first=comb.find(c=>c.G>0.5);if(first)ms.push(first.a);[65,70,80].forEach(a=>{if(a>=a0&&a<=g.end&&!ms.includes(a))ms.push(a);});
+  const byA={};comb.forEach(c=>byA[c.a]=c);let kh='';
+  ms.slice(0,4).forEach((a,i)=>{const c=byA[a];if(!c)return;kh+=stat(i===0?'hero':'','cal',a+'세 · 세후 월',f0((c.G-c.T)/12)+'<small>만원</small>',`세전 ${f0(c.G/12)} · 현재가치 ${f0((c.G-c.T)/12/pv(a))}만원`);});
+  kh+=stat('','coins','~'+g.end+'세 총 세후',manK(sumG-sumT),'세금 '+man(sumT));
+  $('kAll').innerHTML=kh;
+  const gap=comb.filter(c=>c.G>0.5&&(c.G-c.T)<g.target*12*pv(c.a)).map(c=>c.a);
+  $('sumline').innerHTML=`<span>${first?first.a+'세부터 연금 수령 시작':'수령 없음'}</span><span>목표 생활비 월 ${f0(g.target)}만원 (현재가치)</span>`+(gap.length?`<span class="bad">부족 구간 ${rangeTxt(gap)}</span>`:'<span class="good">전 구간 목표 충족</span>');
+  $('pipTotal').style.display=$('dotTotal').style.display=gap.length?'':'none';
+  try{runAdvisors(g);}catch(e){console.error(e);}
+  $('meTop').textContent=first?first.a+'세 · 월 '+f0((first.G-first.T)/12)+'만원':'—';$('meSub').textContent='첫해 세후 월 수령액';
+  save();
+}
+function rangeTxt(arr){const out=[];let s=arr[0],p=arr[0];for(let i=1;i<=arr.length;i++){if(arr[i]!==p+1){out.push(s===p?s+'세':s+'~'+p+'세');s=arr[i];}p=arr[i];}return out.slice(0,3).join(', ')+(out.length>3?' 외':'');}
+
+/* ---------- 추천 엔진 ---------- */
+function withVals(ov,fn){const saved=[];
+  for(const k in ov){if(k[0]==='@'){const kk=k.slice(1);saved.push([k,st[kk]]);st[kk]=ov[k];continue;}
+    const e=$(k);if(!e)continue;saved.push([k,e.type==='checkbox'?e.checked:e.value]);if(e.type==='checkbox')e.checked=ov[k];else e.value=ov[k];}
+  try{return fn();}finally{for(const [k,v] of saved.reverse()){if(k[0]==='@')st[k.slice(1)]=v;else{const e=$(k);if(e.type==='checkbox')e.checked=v;else e.value=v;}}}}
+function runAll(g){
+  const pv=a=>Math.pow(1+g.inf/100,a-g.cur);
+  const l1=calc1(g),l2=calc2(g),o=p3params();CURX=simX(g,o);const s=sim3(o,g,st.method,st.rate,l1);
+  const on1=l1.on,on2=l2.on,on3=$('p3_on').checked,m3={};s.rows.forEach(r=>m3[r.age]=r);
+  const R={n1:0,t1:0,n2:0,t2:0,n3:0,t3:0,short:0,shortYears:[],over:[],g3:0,a0:null};
+  for(let a=g.cur;a<=g.end;a++){const r1=on1?l1.rows[a]:null,r2=on2?l2.rows[a]:null,r3=on3?m3[a]:null;
+    const g1=r1?r1.gross:0,t1=r1?r1.tax:0,g2=r2?r2.gross+r2.lump:0,t2=r2?r2.tax+r2.lumpTax:0,g3=r3?r3.gross:0,t3=r3?r3.tax:0;
+    R.n1+=(g1-t1)/pv(a);R.t1+=t1;R.n2+=(g2-t2)/pv(a);R.t2+=t2;R.n3+=(g3-t3)/pv(a);R.t3+=t3;R.g3+=g3;
+    const pen=(g1-t1)+(r2?r2.gross-r2.tax:0)+(g3-t3);
+    if(R.a0==null&&(g1+(r2?r2.gross:0)+g3)>0.5)R.a0=a;
+    if(R.a0!=null){const tg=g.target*12*pv(a);if(pen<tg){R.short+=(tg-pen)/pv(a);R.shortYears.push(a);}}
+    if(r3&&(r3.type==='sep'||r3.type==='comp'))R.over.push(a);}
+  const left2=on2&&l2.rows[g.end+1]?l2.rows[g.end+1].bJan:0;
+  const xl=CURX.on&&CURX.map[g.end+1]?CURX.map[g.end+1].bJan:0,lr=lowRate(g.end+1);
+  R.left2=left2;R.left3=on3?s.leftAtEnd+xl:0;
+  R.inh2=on2?left2*(1-l2.T.eff*0.7)/pv(g.end):0; // 사망 시 부득이한 인출: 퇴직소득세 70%
+  R.inh3=on3?(s.leftAtEnd*(1-lr*o.taxr)+xl*(1-lr))/pv(g.end):0; // 연금소득세 3.3~5.5%
+  R.inh=R.inh2+R.inh3;const IH=$('g_inherit').value!=='no';
+  R.v1=R.n1;R.v2=R.n2+(IH?R.inh2:0);R.v3=(on3?R.n3:0)+(IH?R.inh3:0);
+  R.v=R.v1+R.v2+R.v3;R.tax=R.t1+R.t2+R.t3;R.l1=l1;R.l2=l2;R.o=o;R.s=s;return R;}
+function bestRatio(o,g,l1){
+  const lend=Math.max(o.start,Math.round(val('m_lend'))||g.end);let best=100,bs=1e9,info={};
+  for(let r=1;r<=100;r++){const x=sim3({...o,ratio:r/100,lend},g,'limit',st.rate,l1,{noTax:true,noX:true});
+    const pays=x.rows.filter(z=>z.age<=lend).map(z=>z.mgross);if(!pays.length)continue;
+    const mean=pays.reduce((a,b)=>a+b,0)/pays.length;if(mean<=0)continue;
+    const cv=Math.sqrt(pays.reduce((a,b)=>a+(b-mean)**2,0)/pays.length)/mean;
+    if(cv<bs-1e-9){bs=cv;best=r;info={min:Math.min(...pays),max:Math.max(...pays),mean};}}
+  return {r:best,cv:bs,lend,...info};}
+const ADV={};let ADVCTX=null;
+function evalRecs(g,base,cands,key){
+  const out=[];
+  for(const c of cands){const r=withVals(c.ov,()=>runAll(g));
+    let dV=r['v'+key]-base['v'+key];if(c.adj)dV+=c.adj;
+    const nk=x=>key===''?x.n1+x.n2+x.n3:x['n'+key],ik=x=>key===''?x.inh:(x['inh'+key]||0);
+    const dR=nk(r)-nk(base)+(c.adj||0),dI=ik(r)-ik(base);
+    const dT=(key===''?r.tax-base.tax:r['t'+key]-base['t'+key]),dS=r.short-base.short;
+    out.push({...c,dV,dR,dI,dT,dS,left:r.s.leftAtEnd,left0:base.s.leftAtEnd,endA:g.end});}
+  CURX=simX(g,p3params());
+  return out;}
+/* 같은 종류(개시 나이·수령 기간·조기 수령)는 가장 좋은 1개만 */
+function bestPerGroup(list,score){const keep=[],best={};
+  for(const r of list){if(!r.grp){keep.push(r);continue;}if(!best[r.grp]||score(r)>score(best[r.grp]))best[r.grp]=r;}
+  Object.values(best).forEach(r=>{if(score(r)>=1)keep.push(r);});return keep;}
+const clean=s=>String(s).replace(/<[^>]+>/g,'');
+const IHON=()=>$('g_inherit').value!=='no';
+function chipsHTML(r,opt){opt=opt||{};let h='';const dR=r.dR!=null?r.dR:r.dV;
+  if(Math.abs(dR)>=1)h+=`<span class="chipv ${dR>0?'up':'dn'}">받는 돈 ${man(Math.abs(dR))} ${dR>0?'늘어요':'줄어요'}</span>`;
+  if(IHON()&&r.dI!=null&&Math.abs(r.dI)>=1)h+=`<span class="chipv ${r.dI>0?'up':'dn'}">남겨 줄 돈 ${man(Math.abs(r.dI))} ${r.dI>0?'늘어요':'줄어요'}</span>`;
+  if(Math.abs(r.dT)>=1)h+=`<span class="chipv ${r.dT<0?'up':'dn'}">세금 ${man(Math.abs(r.dT))} ${r.dT<0?'덜 내요':'더 내요'}</span>`;
+  if(opt.short&&r.dS!=null&&Math.abs(r.dS)>=1)h+=`<span class="chipv ${r.dS<0?'up':'dn'}">모자란 생활비 ${man(Math.abs(r.dS))} ${r.dS<0?'줄어요':'늘어요'}</span>`;
+  if(opt.left&&r.left>0.5&&Math.abs(r.left-r.left0)>1)h+=`<span class="chipv">${r.endA}세에 ${man(r.left)} 남아요</span>`;
+  return h;}
+function plain(r,end){const a=[];const dR=r.dR!=null?r.dR:r.dV;
+  if(Math.abs(dR)>=1)a.push(`${end}세까지 손에 쥐는 돈이 <b>${man(Math.abs(dR))} ${dR>0?'늘고':'줄고'}</b>`);
+  if(IHON()&&r.dI!=null&&Math.abs(r.dI)>=1)a.push(`가족에게 남겨 줄 돈은 <b>${man(Math.abs(r.dI))} ${r.dI>0?'늘고':'줄고'}</b>`);
+  if(Math.abs(r.dT)>=1)a.push(`세금은 <b>${man(Math.abs(r.dT))} ${r.dT<0?'줄어요':'늘어요'}</b>`);
+  return a.length?'이렇게 바꾸면 '+a.join(', ')+'.':'';}
+function bestBox(r,end,label){if(!r)return '';
+  const it=[{v:r.dR!=null?r.dR:r.dV,g:`${end}세까지 손에 쥐는 돈이 <b>${man(Math.abs(r.dR!=null?r.dR:r.dV))} 늘어요</b>`,b:`${end}세까지 받는 돈은 ${man(Math.abs(r.dR!=null?r.dR:r.dV))} 줄어요`},
+    {v:-r.dT,g:`세금을 <b>${man(Math.abs(r.dT))} 덜 내요</b>`,b:`세금은 ${man(Math.abs(r.dT))} 더 내요`},
+    {v:r.dS!=null?-r.dS:0,g:`모자란 생활비가 <b>${man(Math.abs(r.dS||0))} 줄어요</b>`,b:`모자란 생활비는 ${man(Math.abs(r.dS||0))} 늘어요`},
+    {v:IHON()&&r.dI!=null?r.dI:0,g:`가족에게 남겨 줄 돈이 <b>${man(Math.abs(r.dI||0))} 늘어요</b>`,b:`남겨 줄 돈은 ${man(Math.abs(r.dI||0))} 줄어요`}];
+  const goods=it.filter(x=>x.v>=1).sort((a,b)=>b.v-a.v),bads=it.filter(x=>x.v<=-1);
+  if(!goods.length)return '';
+  return `<div class="adv-best"><div class="ab-k">${label||'1순위 추천'}대로 하면 — 가장 좋은 점</div><div class="ab-v">✔ ${goods[0].g}</div>
+    ${goods.length>1||bads.length?`<div class="ab-s">${goods.slice(1).map(x=>'＋ '+x.g.replace(/<\/?b>/g,'')).join(' · ')}${bads.length?`${goods.length>1?' · ':''}<span style="color:#a3261e">대신 ${bads.map(x=>x.b).join(', ')}</span>`:''}</div>`:''}
+    <div class="ab-t">${clean(r.t)}</div></div>`;}
+const BULB='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/></svg>';
+const ADVHEAD=(title)=>`<div class="adv-h"><span class="bulb">${BULB}</span>${title}<small>금액은 모두 오늘 돈 가치 · ‘받는 돈’ = 기대수명까지 세금 떼고 받는 돈${$('g_inherit').value!=='no'?' · ‘남겨 줄 돈’ = 기대수명에 남은 돈이 상속될 때 세금 뗀 금액':''}</small></div>`;
+function renderAdv(id,title,diag,recs,emptyMsg){
+  const el=$(id);ADV[id]=recs;const end=Math.round(val('g_end'));
+  el.innerHTML=ADVHEAD(title)+bestBox(recs[0],end)+`<ul class="adv-d">${diag.map(d=>`<li class="${d.bad?'bad':''}">${d.t}</li>`).join('')}</ul>`+
+   (recs.length?recs.map((r,i)=>`<div class="rec ${i===0?'best':''}"><span class="no">${i+1}</span><div><b class="t">${r.t}</b><div class="why">${r.why||''}</div>
+     <div class="why" style="color:var(--ink2);margin-top:3px">${plain(r,end)}</div>
+     <div class="chips">${chipsHTML(r,{short:id!=='adv3',left:id==='adv3'})}</div></div>
+     <button class="btn sm solid" data-adv="${id}" data-i="${i}">적용</button></div>`).join(''):`<p class="note" style="margin:4px 0 0">${emptyMsg||'지금 설정이 이미 가장 유리해요.'}</p>`);
+  el.querySelectorAll('[data-adv]').forEach(b=>b.onclick=()=>{const r=ADV[b.dataset.adv][+b.dataset.i];applyOv(r.ov,r.t);});}
+let UNDO=null;
+function snapshot(){const d={st:JSON.parse(JSON.stringify(st))};document.querySelectorAll('main input,main select').forEach(e=>{if(!e.id||e.id==='glSearch')return;d[e.id]=e.type==='checkbox'?e.checked:e.value;});return d;}
+function restoreSnap(d){Object.keys(d).forEach(k=>{if(k==='st')return;const e=$(k);if(!e)return;if(e.type==='checkbox')e.checked=d[k];else e.value=d[k];});Object.assign(st,d.st);syncAll();recalc();}
+function syncAll(){['seg_rate:rate','seg_tax:tax','seg_real:real'].forEach(x=>{const [i,k]=x.split(':');syncSeg(i,k);});$('rate_change_box').style.display=st.rate==='change'?'':'none';syncMethods();renderOvr();}
+function applyOv(ov,label){UNDO=snapshot();
+  for(const k in ov){if(k[0]==='@'){st[k.slice(1)]=ov[k];continue;}const e=$(k);if(!e)continue;if(e.type==='checkbox')e.checked=ov[k];else e.value=ov[k];}
+  st.tsel={};syncAll();recalc();
+  $('toastT').textContent='적용: '+clean(label);$('toast').classList.add('on');clearTimeout(applyOv.t);applyOv.t=setTimeout(()=>$('toast').classList.remove('on'),6000);}
+$('toastU').onclick=()=>{if(UNDO){restoreSnap(UNDO);UNDO=null;}$('toast').classList.remove('on');};
+const top=(arr,n,f,withMin)=>{const t=arr.filter(f||(r=>r.dV>=1)).sort((a,b)=>b.dV-a.dV).slice(0,n);
+  const minT=[...arr].filter(r=>r.dT<=-1).sort((a,b)=>a.dT-b.dT)[0];
+  if(withMin&&minT&&!t.includes(minT)){t.push({...minT,why:(minT.dV<0?'<b>세금만 보면 가장 적게 내는 방법</b>이에요. 대신 받는 돈이 줄고 계좌에 돈이 남아요. ':'<b>세금을 가장 적게 내는 방법</b>이에요. ')+(minT.why||'')});}
+  return t;};
+
+function runAdvisors(g){
+  const pv=a=>Math.pow(1+g.inf/100,a-g.cur);
+  const base=runAll(g),o=base.o,l1=base.l1,l2=base.l2,T=l2.T;
+  /* ----- 3층 ----- */
+  const d3=[],c3=[];
+  const rows3=base.s.rows.filter(r=>r.age<=g.end&&r.gross>0.5);
+  const over=rows3.filter(r=>r.type==='sep'||r.type==='comp').map(r=>r.age),exc=rows3.filter(r=>r.excess>0.5).map(r=>r.age);
+  d3.push({t:`지금 조건이면 ${g.end}세까지 3층 세금은 <b>${man(base.t3)}</b>, 받는 돈의 평균 <b>${base.g3?(base.t3/base.g3*100).toFixed(1):0}%</b>를 세금으로 내요.`});
+  if(over.length)d3.push({bad:1,t:`<b>${rangeTxt(over)}</b>에는 1년에 1,500만원 넘게 받아서 세금이 <b>16.5%</b>로 올라가요 (1,500만원 이하면 3.3~5.5%).`});
+  else d3.push({t:'매년 1,500만원 이하로 받아서 낮은 세율(3.3~5.5%)만 내고 있어요. 👍'});
+  if(exc.length)d3.push({bad:1,t:`<b>${rangeTxt(exc)}</b>에는 1년에 꺼낼 수 있는 한도를 넘겨, 넘은 돈에 16.5%가 붙어요.`});
+  if(base.s.leftAtEnd>0.5)d3.push({t:`${g.end}세에 3층에 <b>${man(base.s.leftAtEnd)}</b>이 남아요. 이 돈은 ${term('inherit','가족에게 상속')}되고, 세금 3.3~5.5%만 떼요. 다 쓰고 싶으면 조금 더 받아도 돼요.`});
+  if(st.tax!=='auto'&&over.length)c3.push({t:'1,500만원 넘는 해에는 세금이 덜 나오는 방법을 자동으로 고르기',why:'1년 연금이 1,500만원을 넘으면 ① 16.5%만 떼고 끝내거나 ② 다른 소득과 합쳐 계산하는 방법 중 고를 수 있어요. 해마다 세금이 적은 쪽으로 계산해요.',ov:{'@tax':'auto'}});
+  const br=bestRatio(o,g,l1),N=Math.max(1,g.end-o.start+1);
+  if(!(st.method==='limit'&&Math.round(o.ratio*100)===br.r))c3.push({t:`한도의 <b>${br.r}%</b>만 받아서 ${br.lend}세까지 나눠 받기`,why:'해마다 꺼낼 수 있는 최대 금액(한도)을 다 받지 않고 일부만 받아 오래 나눠 받아요.',ov:{'@method':'limit',m_ratio:br.r,m_lend:br.lend}});
+  if(!(st.method==='yearly'&&o.yyears===N))c3.push({t:`<b>${o.start}~${g.end}세</b> 동안 매년 비슷한 금액으로 나눠 받기`,why:'매년 1월에 남은 돈을 남은 해 수로 나눠요. 한꺼번에 몰아 받지 않아 세금도 고르게 나와요.',ov:{'@method':'yearly',m_yyears:N}});
+  const M=Math.floor(1500/12/Math.max(.01,o.taxr));
+  c3.push({t:`매달 <b>${f0(M)}만원</b>씩만 받기 (1년 1,500만원 이하)`,why:'1년에 1,500만원 이하로 받으면 세금이 3.3~5.5%로 낮아요.',ov:{'@method':'fixed',m_fixed:M,m_fixbase:'pre',m_fixidx:false}});
+  const mf=Math.floor(maxFixed(o,g,st.rate));
+  if(mf>0&&Math.abs(mf-M)>5)c3.push({t:`매달 <b>${f0(mf)}만원</b>씩 ${g.end}세까지 똑같이 받기`,why:'돈이 기대수명에 딱 맞춰 떨어지도록 매달 같은 금액을 받아요.',ov:{'@method':'fixed',m_fixed:mf,m_fixbase:'pre',m_fixidx:false}});
+  for(const k of [1,2,3,4,5]){const ns=o.start+k;if(ns>g.end-5)break;const ext=o.cend>=o.start&&g.cur<o.start;
+    let adj=0;if(ext)for(let a=o.start;a<ns;a++)adj+=(-o.contrib+Math.min(o.contrib,900)*0.132)/pv(a);
+    c3.push({grp:'age',t:`연금 받기 시작을 ${o.start}세 → <b>${ns}세</b>로 늦추기${ext?' (그때까지 계속 저축)':''}`,why:ext?`늦게 받을수록 돈이 더 불어나고, 더 저축한 만큼 세금 환급도 받아요. (더 낸 저축액은 빼고 비교했어요)`:'늦게 받을수록 돈이 더 오래 불어나요.',ov:ext?{p3_start:ns,p3_cend:ns}:{p3_start:ns},adj});}
+  if(o.contrib<900&&g.cur<o.start){let adj=0;for(let a=g.cur;a<Math.min(o.cend,o.start);a++)adj+=(-(900-o.contrib)+(900-o.contrib)*0.132)/pv(a);
+    c3.push({t:`매년 저축을 ${f0(o.contrib)}만원 → <b>900만원</b>으로 늘리기`,why:`900만원까지는 낸 돈의 13.2~16.5%를 연말정산 때 돌려받아요. 매년 ${f0((900-o.contrib)*0.132)}~${f0((900-o.contrib)*0.165)}만원 더 환급돼요.`,ov:{p3_contrib:900},adj});}
+  if(o.contrib>900&&o.taxr>=0.999&&g.cur<o.start){const yrs=Math.max(0,Math.min(o.cend,o.start)-g.cur);const non=(o.contrib-900)*yrs;const share=Math.max(50,Math.round((1-non/Math.max(1,base.s.B0))*100));
+    c3.push({t:`과세대상 비율을 <b>${share}%</b>로 고치기`,why:`1년에 900만원을 넘게 낸 돈(총 ${man(non)})은 세금 혜택을 안 받았기 때문에, 나중에 꺼낼 때도 세금이 붙지 않아요.`,ov:{p3_taxr:share}});}
+  const r3=top(bestPerGroup(evalRecs(g,base,c3,'3'),r=>r.dV),3,null,true);
+  renderAdv('adv3','3층 절세 · 수령 추천',d3,r3);
+  /* 한도분할 비율 안내 */
+  const lastK=10-(o.k0-1);
+  $('ratio_out').innerHTML=`한도의 100%를 받으면 10년째에 한도가 남은 돈의 120%가 되어 <b>${o.start+lastK-1}세(${lastK}년째)에 모두 받고 끝나요.</b><br>
+    ${br.lend}세까지 가장 고르게 받으려면 <b class="big">한도 대비 ${br.r}%</b> → 연 ${f0(br.min)}~${f0(br.max)}만원 (평균 월 ${f0(br.mean/12)}만원) <button class="btn sm solid" id="ratioApply">적용</button>
+    ${br.cv>0.25?`<br><span class="note">한도분할식은 한도가 해마다 커지는 구조(1년째 12% → 10년째 120%)라 비율 하나로는 완전히 고르게 만들 수 없어요. 매년 거의 같은 금액을 원하면 <b>연간금액 일정 ${Math.max(1,br.lend-o.start+1)}년</b>을 쓰세요.</span> <button class="btn sm" id="yearlyApply">연간금액 일정으로 바꾸기</button>`:''}`;
+  $('ratioApply').onclick=()=>applyOv({m_ratio:br.r,m_lend:br.lend},'한도 대비 '+br.r+'%');
+  if($('yearlyApply'))$('yearlyApply').onclick=()=>applyOv({'@method':'yearly',m_yyears:Math.max(1,br.lend-o.start+1)},'연간금액 일정 '+Math.max(1,br.lend-o.start+1)+'년');
+  /* ----- 1층 ----- */
+  const d1=[],c1=[];const early=+$('p1_early').value,norm=val('p1_start')+early;
+  if(l1.on){const yrs1=Object.values(l1.rows).filter(r=>r.gross>0);
+    d1.push({t:`${g.end}세까지 1층 세금은 <b>${man(base.t1)}</b>, 받는 돈의 평균 <b>${(base.t1/Math.max(1,yrs1.reduce((a,r)=>a+r.gross,0))*100).toFixed(1)}%</b>예요. 공무원·사학연금은 다른 소득과 합쳐 세금을 매겨요.`});
+    if(val('g_other')>0)d1.push({t:`연금 말고 다른 소득(${man(val('g_other'))})이 있어서 연금 세금도 조금 더 나와요.`});
+    if(over.length&&st.tax!=='sep')d1.push({t:'3층을 "다른 소득과 합쳐 계산"으로 고르면 1층 연금과 합쳐져 세율이 오를 수 있어요.'});
+    for(let e=0;e<=5;e++){if(e===early)continue;c1.push({grp:'early',t:e===0?`정해진 나이(<b>${norm}세</b>)에 받기 — 깎이지 않은 금액`:`<b>${e}년 일찍</b>(${norm-e}세부터) 받기 — 평생 ${e*5}% 적게`,why:e===0?'일찍 받으면 1년마다 5%씩 평생 깎여요. 제때 받으면 깎이지 않아요.':'일찍 받는 대신 평생 받는 금액이 줄어요. 기대수명이 짧을 때만 유리해요.',ov:{p1_start:norm-e,p1_early:e}});}
+    const be=withVals({p1_start:norm,p1_early:0},()=>calc1(g)),bE=withVals({p1_start:norm-1,p1_early:1},()=>calc1(g));let c0=0,c1s=0,bep=null;
+    for(let a=g.cur;a<=g.end;a++){c0+=be.rows[a]?be.rows[a].gross-be.rows[a].tax:0;c1s+=bE.rows[a]?bE.rows[a].gross-bE.rows[a].tax:0;if(a>=norm&&bep==null&&c0>c1s)bep=a;}
+    d1.push({t:`1년 일찍 받는 것과 제때 받는 것의 총액이 같아지는 나이는 <b>${bep?bep+'세':g.end+'세 이후'}</b>예요. 그보다 오래 살면 제때 받는 게 이득이에요.`});
+    if(T&&$('p1_smode').value==='manual'&&Math.round(norm)!==T.pubStart)c1.push({t:`연금 시작 나이를 퇴직 연도에 맞는 <b>${T.pubStart}세</b>로 자동 맞추기`,why:'2층에 넣은 퇴직 날짜로 보면 공무원연금은 이 나이부터 나와요. 계산을 정확하게 맞춰요.',ov:{p1_smode:'auto',p1_early:0}});}
+  renderAdv('adv1','1층 절세 · 수령 추천',d1,top(bestPerGroup(evalRecs(g,base,c1,'1'),r=>r.dV),2),l1.on?'지금 받는 시점이 가장 유리해요.':'1층이 합산에서 빠져 있어요.');
+  /* ----- 2층 ----- */
+  const d2=[],c2=[];
+  if(l2.on){d2.push({t:`${g.end}세까지 2층 세금은 <b>${man(base.t2)}</b>이에요. 퇴직금에 붙는 세금 비율은 <b>${(T.eff*100).toFixed(2)}%</b>예요.`});
+    const ex2=Object.keys(l2.rows).map(Number).filter(a=>a<=g.end&&l2.rows[a].excess>0.5);
+    if(ex2.length)d2.push({bad:1,t:`<b>${rangeTxt(ex2)}</b>에는 1년 한도보다 많이 꺼내서, 넘은 돈은 세금을 깎아 주지 않아요.`});
+    if(T.eff<0.005)d2.push({t:'오래 근무해서 퇴직금 세금이 거의 없어요. 세금보다는 <b>언제 받을지</b>(연금 나오기 전 공백기)를 기준으로 정하면 돼요.'});
+    if($('s1_mode').value==='lump'&&T.s1>0)c2.push({t:'퇴직수당을 한 번에 받지 말고 <b>IRP 통장에 넣어 나눠 받기</b>',why:'나눠 받으면 퇴직금 세금을 30~50% 덜 내요.',ov:{s1_mode:'irp'}});
+    if(T.type==='hon'&&$('s2_mode').value==='lump'&&T.s2>0)c2.push({t:'명예퇴직수당을 <b>IRP 통장에 넣어 나눠 받기</b>',why:'나눠 받으면 퇴직금 세금을 30~50% 덜 내요.',ov:{s2_mode:'irp'}});
+    const st2=Math.max(55,T.retireAge,val('p2_start')),cy=Math.round(val('p2_years')),gap=Math.max(1,val('p1_start')-st2);
+    for(const y of [...new Set([gap,10,11,15,20,21,25,30])]){if(y===cy||st2+y-1>g.end||y<1)continue;
+      c2.push({grp:'years',t:`IRP를 <b>${y}년</b> 동안 나눠 받기 (${st2}~${st2+y-1}세)${y===gap?' — 연금 나오기 전 공백기에 맞춤':''}`,why:y>=21?'21년째부터는 세금을 50%까지 깎아 줘요. 오래 나눌수록 남은 돈이 더 불어나요.':y>=11?'11년째부터는 세금을 40% 깎아 줘요. 오래 나눌수록 남은 돈이 더 불어나요.':y>=10?'10년 이상 나눠 받으면 세금 감면(30%)을 다 받아요.':'1층 연금이 나오기 전 생활비로 써요. 대신 한 해에 많이 받으면 감면이 줄어요.',ov:{p2_years:y,p2_start:st2}});}}
+  const ev2=evalRecs(g,base,c2,'2');
+  renderAdv('adv2','2층 절세 · 수령 추천',d2,top(bestPerGroup(ev2,r=>r.dV-r.dS),2,r=>r.dV>=1||r.dS<=-1),l2.on?'지금 설정이 이미 가장 유리해요.':'2층이 합산에서 빠져 있어요.');
+  /* ----- 합산 ----- */
+  ADVCTX={g,base};renderTotalAdv();
+}
+function renderTotalAdv(){
+  const {g,base}=ADVCTX;const el=$('advT');
+  const dT=[];
+  dT.push({t:`${g.end}세까지 내는 세금은 모두 <b>${man(base.tax)}</b>이에요. (1층 ${man(base.t1)} · 2층 ${man(base.t2)} · 3층 ${man(base.t3)})`});
+  if(base.left2+base.left3>0.5)dT.push({t:`${g.end}세에 연금계좌에 <b>${man(base.left2+base.left3)}</b>이 남아 ${term('inherit','상속')}돼요. 연금 세금을 떼면 가족에게 약 <b>${man((base.inh)*Math.pow(1+g.inf/100,g.end-g.cur))}</b>이 가요 (상속세는 다른 재산과 합쳐 계산).`});
+  dT.push(base.shortYears.length?{bad:1,t:`<b>${rangeTxt(base.shortYears)}</b>에는 받는 연금이 목표 생활비(월 ${f0(g.target)}만원)보다 적어요. 모자란 돈은 모두 ${man(base.short)}이에요 (오늘 돈 가치).`}:{t:'모든 해에 목표 생활비를 채워요. 👍'});
+  // 층별 후보: 합산 기준으로 다시 평가
+  const L=[{k:'3',name:'3층 개인연금',c:'var(--c3)',list:ADV.adv3||[]},{k:'2',name:'2층 퇴직급여',c:'var(--c2)',list:ADV.adv2||[]},{k:'1',name:'1층 공적연금',c:'var(--c1)',list:ADV.adv1||[]}];
+  if(!ADVCTX.ev){ADVCTX.ev={};L.forEach(x=>{ADVCTX.ev[x.k]=evalRecs(g,base,x.list,'');});}
+  const ev=ADVCTX.ev;
+  if(!st.tsel)st.tsel={};const SEL={};
+  L.forEach(x=>{const arr=ev[x.k];let bi=-1,bs=0;arr.forEach((r,i)=>{const sc=r.dV-r.dS;if(sc>bs+1){bs=sc;bi=i;}});
+    const v=st.tsel[x.k];if(v==='')SEL[x.k]=-1;else if(v!=null){const f=arr.findIndex(a=>clean(a.t)===v);SEL[x.k]=f>=0?f:bi;}else SEL[x.k]=bi;});
+  const merged={};let adj=0;const chosen=[];
+  L.forEach(x=>{const i=SEL[x.k];if(i>=0&&ev[x.k][i]){Object.assign(merged,ev[x.k][i].ov);adj+=ev[x.k][i].adj||0;chosen.push(x.name);}});
+  let tot=null;if(chosen.length){const r=withVals(merged,()=>runAll(g));CURX=simX(g,p3params());tot={t:'고른 조정 '+chosen.length+'개 ('+chosen.join(' · ')+')',dV:r.v-base.v+adj,dR:(r.n1+r.n2+r.n3)-(base.n1+base.n2+base.n3)+adj,dI:r.inh-base.inh,dT:r.tax-base.tax,dS:r.short-base.short,left:0,left0:0};}
+  el.innerHTML=ADVHEAD('합산 절세 · 수령 추천')+bestBox(tot,g.end,'고른 조정')+`<ul class="adv-d">${dT.map(d=>`<li class="${d.bad?'bad':''}">${d.t}</li>`).join('')}</ul>
+   <p class="note" style="margin:6px 0 4px">층마다 <b>어떻게 바꿀지 고르고</b>, 아래에서 합친 결과를 확인한 뒤 한 번에 적용하세요.</p>`+
+   L.map(x=>{const arr=ev[x.k],i=SEL[x.k],r=i>=0?arr[i]:null;
+     return `<div class="rec"><span class="no" style="background:${x.c};color:${x.k==='3'?'#1f2a08':'#fff'}">${x.k}</span><div>
+       <div class="row" style="gap:10px"><b>${x.name}</b><div class="inp" style="height:44px;flex:1;min-width:220px;max-width:560px"><select data-tsel="${x.k}">
+         <option value="-1"${i<0?' selected':''}>바꾸지 않기</option>${arr.map((a,j)=>`<option value="${j}"${j===i?' selected':''}>${clean(a.t)}</option>`).join('')}</select></div></div>
+       <div class="why" style="margin-top:6px">${r?(r.why||''):(arr.length?'지금 설정을 그대로 둬요.':'이 층은 지금이 가장 좋아요. 바꿀 게 없어요.')}</div>
+       ${r?`<div class="chips">${chipsHTML(r,{short:true})}</div>`:''}</div><span></span></div>`;}).join('')+
+   `<div class="callout" style="margin-top:12px">${tot?`<b>고른 조정 ${chosen.length}개를 모두 하면</b> (${chosen.join(' · ')})<br>${plain(tot,g.end)} ${Math.abs(tot.dS)>=1?`모자란 생활비는 <b>${man(Math.abs(tot.dS))} ${tot.dS<0?'줄어요':'늘어요'}</b>.`:''}
+     <div class="chips" style="margin:8px 0">${chipsHTML(tot,{short:true})}</div><button class="btn solid" id="tApply">고른 조정 한 번에 적용</button>`:'고른 조정이 없어요. 위에서 층별로 골라 보세요.'}</div>`;
+  el.querySelectorAll('[data-tsel]').forEach(s=>s.onchange=()=>{const k=s.dataset.tsel,v=+s.value;st.tsel[k]=v<0?'':clean(ev[k][v].t);renderTotalAdv();save();});
+  if($('tApply'))$('tApply').onclick=()=>applyOv(merged,'합산 추천 '+chosen.length+'개');
+}
+
+/* ---------- persistence ---------- */
+const KEY='pension3-v2';
+function save(){try{const d={st:{...st},big:document.documentElement.classList.contains('big')};document.querySelectorAll('main input,main select').forEach(e=>{if(!e.id||e.id==='glSearch')return;d[e.id]=e.type==='checkbox'?e.checked:e.value;});localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(!d)return;Object.keys(d).forEach(k=>{if(k==='st'||k==='big')return;const e=$(k);if(!e)return;if(e.type==='checkbox')e.checked=d[k];else e.value=d[k];});
+  if(d.st)Object.assign(st,d.st);if(d.big)document.documentElement.classList.add('big');}catch(e){}}
+$('t_bm').innerHTML=[...Array(12)].map((_,i)=>`<option value="${i+1}"${i===4?' selected':''}>${i+1}월</option>`).join('');
+buildHonOpts({cur:Math.round(val('g_cur'))});
+load();
+['seg_rate:rate','seg_tax:tax','seg_real:real'].forEach(x=>{const [i,k]=x.split(':');syncSeg(i,k);});
+$('rate_change_box').style.display=st.rate==='change'?'':'none';
+syncMethods();renderOvr();
+document.querySelectorAll('main input,main select').forEach(e=>{if(e.closest('#ovr_list')||e.id==='glSearch')return;e.addEventListener(e.tagName==='SELECT'||e.type==='checkbox'?'change':'input',sched);});
+recalc();route();openTier(st.open||3,null);
+})();
+</script>
+</body>
+</html>
