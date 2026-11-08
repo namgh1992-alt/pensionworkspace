@@ -313,7 +313,14 @@ details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
 .inp:has(input[readonly]){background:var(--g50);border-color:var(--g200)}
 .autotag{display:inline-block;font-size:.75rem;font-weight:800;color:#fff;background:var(--g600);border-radius:999px;padding:0 8px;margin-right:4px}
 .notice{background:#fff8e6;border:1.5px solid #f0c96b;border-left:6px solid #e0a020;border-radius:18px;padding:16px 20px 14px;margin:0 0 20px;color:#4a3a12;box-shadow:0 6px 18px rgba(160,110,10,.08)}
-.notice .nt-h{display:flex;align-items:center;gap:8px;font-weight:900;font-size:1.05rem;color:#8a5a00;margin-bottom:8px}
+.notice .nt-h{display:flex;align-items:center;gap:8px;font-weight:900;font-size:1.05rem;color:#8a5a00;cursor:pointer;list-style:none;user-select:none}
+.notice .nt-h::-webkit-details-marker{display:none}
+.notice[open] .nt-h{margin-bottom:8px}
+.notice .nt-t{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:.85rem;font-weight:800;color:#8a5a00;background:rgba(224,160,32,.15);border-radius:999px;padding:4px 10px 4px 12px}
+.notice .nt-t svg{transition:transform .25s}
+.notice[open] .nt-t svg{transform:rotate(180deg)}
+.notice .nt-c{display:none}.notice:not([open]) .nt-c{display:inline}.notice:not([open]) .nt-o{display:none}
+.notice:not([open]){padding-bottom:16px}
 .notice ol{margin:0;padding-left:1.3em;font-size:.93rem;line-height:1.65}
 .notice li{margin:3px 0}.notice b{color:#3d2c00}
 @media (max-width:600px){.notice{padding:14px 14px 12px;border-radius:14px}.notice ol{font-size:.86rem;padding-left:1.15em}.notice .nt-h{font-size:.98rem}}
@@ -460,15 +467,15 @@ details summary{cursor:pointer;font-weight:700;color:var(--c1);font-size:1rem}
 
   <!-- ============ VIEW: BASIC ============ -->
   <section class="view" id="v-basic">
-    <div class="notice" role="note">
-      <div class="nt-h"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>이용 안내 및 면책 고지</div>
+    <details class="notice" id="notice" open>
+      <summary class="nt-h"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>이용 안내 및 면책 고지<span class="nt-t"><span class="nt-o">접기</span><span class="nt-c">펼치기</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></span></summary>
       <ol>
         <li>본 계산기는 <b>2026년 11월 8일 현재 시행 중인 세법 및 관련 법령</b>을 기준으로 작성되었으며, 주요 내용은 AI(Claude)를 활용하여 검토하였습니다.</li>
         <li>계산 결과는 입력값과 일정한 가정(수익률·물가상승률 등)에 따른 <b>추정치로서 참고용 정보</b>이며, 세무·법률·투자 자문에 해당하지 않습니다. 관련 법령은 개정될 수 있습니다.</li>
         <li>실제로 연금을 개시하거나 수령 방법을 정하시기 전에는 본 내용을 참고 자료로 활용하시되, 반드시 <b>세무 전문가 및 해당 기관(공무원연금공단·사학연금공단·금융회사 등)과 상담</b>하신 후 결정하시기 바랍니다.</li>
         <li>본 계산기 및 제공 정보의 이용으로 발생한 결과에 대하여 제작자는 관련 법령이 허용하는 범위에서 <b>법적 책임을 지지 않습니다.</b></li>
       </ol>
-    </div>
+    </details>
     <div class="vhead"><div class="eyebrow">STEP 1</div><h2>기본 정보</h2><p>세 층 모두에 공통으로 쓰이는 값입니다. 점선 밑줄 단어를 누르면 쉬운 설명이 나와요.</p></div>
     <div class="card">
       <p class="ctitle"><span class="n">1</span>나이와 물가</p>
@@ -1511,6 +1518,8 @@ function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(!d)
 $('t_bm').innerHTML=[...Array(12)].map((_,i)=>`<option value="${i+1}"${i===4?' selected':''}>${i+1}월</option>`).join('');
 buildHonOpts({cur:Math.round(val('g_cur'))});
 load();
+try{if(localStorage.getItem('pension3-notice')==='closed')$('notice').open=false;}catch(e){}
+$('notice').addEventListener('toggle',()=>{try{localStorage.setItem('pension3-notice',$('notice').open?'open':'closed');}catch(e){}});
 ['seg_rate:rate','seg_tax:tax','seg_real:real'].forEach(x=>{const [i,k]=x.split(':');syncSeg(i,k);});
 $('rate_change_box').style.display=st.rate==='change'?'':'none';
 syncMethods();renderOvr();
